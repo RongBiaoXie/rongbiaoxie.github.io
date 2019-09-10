@@ -3,11 +3,52 @@
   
     
     <entry>
+      <title><![CDATA[SMO]]></title>
+      <url>/2019/09/10/SMO/</url>
+      <content type="html"><![CDATA[<p>A simple, delicate, and modern theme for the static site generator Hexo. It allows you to set up a single or multiple-column (up to three column) blog with its versatile layout configuration. Additionally, it offers plentiful plugins and pluggable widgets so that you can enable the features you want in no time. And with the all-new API designing, Icarus makes the development of this theme painless for developers and users.<br> <a id="more"></a></p>
+<p>To set up Icarus in your blog, please download the tarball from the GitHub and extract it to your Hexo blog’s theme directory. Alternatively, you can run the following command:<br>A simple, delicate, and modern theme for the static site generator Hexo. It allows you to set up a single or multiple-column (up to three column) blog with its versatile layout configuration. Additionally, it offers plentiful plugins and pluggable widgets so that you can enable the features you want in no time. And with the all-new API designing, Icarus makes the development of this theme painless for developers and users.</p>
+<p>To set up Icarus in your blog, please download the tarball from the GitHub and extract it to your Hexo blog’s theme directory. Alternatively, you can run the following command:<br>A simple, delicate, and modern theme for the static site generator Hexo. It allows you to set up a single or multiple-column (up to three column) blog with its versatile layout configuration. Additionally, it offers plentiful plugins and pluggable widgets so that you can enable the features you want in no time. And with the all-new API designing, Icarus makes the development of this theme painless for developers and users.</p>
+<p>To set up Icarus in your blog, please download the tarball from the GitHub and extract it to your Hexo blog’s theme directory. Alternatively, you can run the following command:</p>
+]]></content>
+      
+        <categories>
+            
+            <category> Machine Learning </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> Machine Learning </tag>
+            
+            <tag> SVM </tag>
+            
+            <tag> AI </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[Hello, Nanjing University]]></title>
       <url>/2019/09/06/Hello-Nanjing-University/</url>
-      <content type="html"><![CDATA[<p>2019.09.01: I am so glad to come to Nanjing University and start my new study.</p>
-<div align="center"><img src="https://wx4.sinaimg.cn/mw1024/d787ef28ly1g6s0ouwc60j20b4069q3k.jpg" referrer="no-referrer" width="40%"> <img src="https://wx2.sinaimg.cn/mw1024/d787ef28ly1g6s0oy9k4bj20b4069t9o.jpg" referrer="no-referrer" width="40%"></div>]]></content>
+      <content type="html"><![CDATA[<p>2019.09.01: I am so glad to come to Nanjing University and start my new study.<br> <a id="more"></a></p>
+<div align="center"><img src="https://wx4.sinaimg.cn/mw1024/d787ef28ly1g6s0ouwc60j20b4069q3k.jpg" referrer="no-referrer" width="40%"> <img src="https://wx2.sinaimg.cn/mw1024/d787ef28ly1g6s0oy9k4bj20b4069t9o.jpg" referrer="no-referrer" width="40%"></div>
+]]></content>
       
+        <categories>
+            
+            <category> Research Life </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> Research Life </tag>
+            
+        </tags>
         
     </entry>
     
