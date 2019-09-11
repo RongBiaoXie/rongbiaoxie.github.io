@@ -19,9 +19,50 @@
 <div align="center">$w^Tx_i+b\geq+1, y_i=+1$</div>
 
 <div align="center">$w^Tx_i+b\leq-1, y_i=-1$</div>
-这里之所以可以与$\pm 1$比较，是因为只与wx+b的方向有关，而与大小无关，若存在其他w和b超平面成立，总能通过缩放变换使得上式成立，使得等号成立的数据点称为“支持向量”，并且上式两支持超平面距离，即“间隔”为
+&ensp;&ensp;这里之所以可以与$\pm 1$比较，是因为间隔只与wx+b的方向有关，而与大小无关，若存在其他w和b超平面成立，总能通过缩放变换使得上式成立，使得等号成立的数据点称为“支持向量”，并且上式两支持超平面距离，即“间隔”为
 <div align="center">$2 \over ||w||$</div>
-&ensp;&ensp;
+<div align="center"><img src="https://ae01.alicdn.com/kf/H07d91f65b82d403eb36c597414b4c83dW.jpg" referrer="no-referrer" width="50%"></div>
+&ensp;&ensp;目标是间隔最大化，列出优化方程及约束为
+$$max {2 \over ||w||}  等价于  min {1 \over 2} ||w||^2$$
+$$s.t. y_i(w^Tx+b) \geq 1$$
+&ensp;&ensp;是可以直接利用现成的凸二次规划包计算的，但我们通过使用对偶方法和SMO序列最优算法求解。
+
+<h2 id="3、对偶问题转换优化方程"><a href="#3、对偶问题转换优化方程" class="headerlink" title="3、对偶问题转换优化方程"></a>3、对偶问题转换优化方程</h2><p>&ensp;&ensp;使用拉格朗日乘子法可得到其对偶问题为<br>$$L(w,b,a) = {1 \over 2} ||w||^2 + \displaystyle \sum^m_{i=1} a_i(1-y_i(w^Tx+b))$$<br>&ensp;&ensp;KKT条件为</p>
+<div align="center">$a_i \geq 0$</div>
+<div align="center">$y_i(w^Tx+b)-1 \geq 0$</div>
+<div align="center">$a_i(y_i(w^Tx+b)-1) = 0$</div>
+&ensp;&ensp;以$a_i \geq 0$为前提，当$y_i(w^Tx+b) \geq 1$时，$L(w,b,a)$的最优值为${1 \over 2} ||w||^2$，当$y_i(w^Tx+b) < 1$时，$L(w,b,a)$的最优值为$\infty$.
+
+<p>&ensp;&ensp;所以优化${1 \over 2} ||w||^2$等价于优化$L(w,b,a)(a_i \geq 0)$，于是我们优化的目标函数为<br>$$min_{w,b}{1 \over 2}||w||^2 = min_{w,b}max_{a}L(w,b,a)$$<br>&ensp;&ensp;根据西瓜书p406定理，在凸函数满足KKT条件时，主问题的下界等于对偶问题的上界，即<br>$$min_{w,b}max_{a}L(w,b,a) 等价于 max_{a}min_{w,b}L(w,b,a)$$<br>&ensp;&ensp;对$w和b$求偏导可得</p>
+<div align="center">$w=\displaystyle \sum^m_{i=1} a_iy_ix_i$</div>
+<div align="center">$0=\displaystyle \sum^m_{i=1} a_iy_i$</div>
+&ensp;&ensp;再代入$L(w,b,a)$可得，
+<div align="center"><img src="https://ae01.alicdn.com/kf/H296a93fa87b847e2b41936b1fd8e0d2cl.jpg" referrer="no-referrer" width="100%"></div>
+&ensp;&ensp;最终，约束方程转换为，
+$$max_a \displaystyle \sum^m_{i=1} a_i - {1 \over 2}\displaystyle \sum^m_{i=1} \displaystyle \sum^m_{j=1} a_ia_jy_iy_jx_i^Tx_j$$
+$$\displaystyle \sum^m_{i=1} a_iy_i = 0$$
+$$a_i \geq 0$$
+&ensp;&ensp;SVM思想的最终目标就是解出a，求得w，b得到超平面模型
+$$f(x) = w^Tx+b = \displaystyle \sum^m_{i=1} a_iy_ix_i^Tx+b$$
+&ensp;&ensp;根据模型方程和KKT条件可以发现最终模型只与支持向量有关，
+
+<p>&ensp;&ensp;1)若$a_i=0$，样本不出现在$f(x)$表达式中，不影响。</p>
+<p>&ensp;&ensp;2)若$a_i&gt;0$，则有y_if(x_i) = 1，样本点位于最大间隔边界上，是一个支持向量。</p>
+<p>&ensp;&ensp;对于优化方程的求解，我们在后面的SMO算法进行求解。</p>
+<h2 id="4、软间隔与正则化（近似线性可分）"><a href="#4、软间隔与正则化（近似线性可分）" class="headerlink" title="4、软间隔与正则化（近似线性可分）"></a>4、软间隔与正则化（近似线性可分）</h2><p>&ensp;&ensp;现实情况很难找到一个超平面将训练样本完全分开，即使找到也不确定是否是过拟合。</p>
+<div align="center"><img src="https://ae01.alicdn.com/kf/Hcabe60ec449d49948ec0ab75b1de58d3p.jpg" referrer="no-referrer" width="50%"></div>
+&ensp;&ensp;因此我们允许做到近似线性可分，引入软间隔的概念，允许支持向量机在少量部分样本出错，即不满足约束
+$$y_i(w^Tx+b)-1 \geq 0$$
+&ensp;&ensp;优化目标可写成
+$$min_{w,b}{1 \over 2} ||w||^2+C\displaystyle \sum^m_{i=1} max(0,1-y_i(w^Tx_i+b))$$
+&ensp;&ensp;C>0是惩罚系数，可理解为一般ML问题的正则化参数，C越大，对误分类惩罚越大，当C无穷大时，迫使所有样本分类正确，即硬间隔SVM问题。C越小，对误分类惩罚越小。
+
+<p>&ensp;&ensp;引入松弛变量$\xi_i$ , 优化方程为，</p>
+<div align="center">$min_{w,b}{1 \over 2} ||w||^2+C\displaystyle \sum^m_{i=1} \xi_i$</div>
+<div align="center">$s.t. y_i(w^Tx+b) \geq 1-\xi_i$</div>
+<div align="center">$\xi_i \geq 0$</div>
+&ensp;&ensp;即软间隔支持向量机。
+
 ]]></content>
       
         <categories>
