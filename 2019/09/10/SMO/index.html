@@ -8,21 +8,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <meta name="referrer" content="no-referrer">
 
-<title>Code Analysis Of SMO Algorithm And The Summary Of SVM - Home：Rongbiao Xie</title>
+<title>Code Analysis Of SMO Algorithm And The Summary Of SVM（一） - Home：Rongbiao Xie</title>
 
 
     <meta name="description" content="&amp;ensp;&amp;ensp;Recently, I have read relevant theoretical knowledge of support vector machine(SVM) and the code implementation of SMO. The main idea is to find a dividing hyperplane in a given data set D">
 <meta name="keywords" content="AI,Machine Learning,SVM">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Code Analysis Of SMO Algorithm And The Summary Of SVM">
+<meta property="og:title" content="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）">
 <meta property="og:url" content="https://rongbiaoxie.github.io/2019/09/10/SMO/index.html">
 <meta property="og:site_name" content="Home：Rongbiao Xie">
 <meta property="og:description" content="&amp;ensp;&amp;ensp;Recently, I have read relevant theoretical knowledge of support vector machine(SVM) and the code implementation of SMO. The main idea is to find a dividing hyperplane in a given data set D">
 <meta property="og:locale" content="en">
 <meta property="og:image" content="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg">
-<meta property="og:updated_time" content="2019-09-11T03:25:43.242Z">
+<meta property="og:updated_time" content="2019-09-11T09:19:37.114Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Code Analysis Of SMO Algorithm And The Summary Of SVM">
+<meta name="twitter:title" content="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）">
 <meta name="twitter:description" content="&amp;ensp;&amp;ensp;Recently, I have read relevant theoretical knowledge of support vector machine(SVM) and the code implementation of SMO. The main idea is to find a dividing hyperplane in a given data set D">
 <meta name="twitter:image" content="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg">
 
@@ -94,7 +94,7 @@
         <div class="navbar-brand is-flex-center">
             <a class="navbar-item navbar-logo" href="/">
             
-                <img src="https://ae01.alicdn.com/kf/H51473c5216964da287a7556080e0b00be.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM" height="28">
+                <img src="https://ae01.alicdn.com/kf/H51473c5216964da287a7556080e0b00be.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）" height="28">
             
             </a>
         </div>
@@ -338,14 +338,14 @@
             
             <a href="/2019/09/10/SMO/" class="media-left">
                 <p class="image is-64x64">
-                    <img class="thumbnail" src="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM">
+                    <img class="thumbnail" src="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）">
                 </p>
             </a>
             
             <div class="media-content">
                 <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-10T02:29:47.000Z">2019-09-10</time></div>
-                    <a href="/2019/09/10/SMO/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Code Analysis Of SMO Algorithm And The Summary Of SVM</a>
+                    <a href="/2019/09/10/SMO/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Code Analysis Of SMO Algorithm And The Summary Of SVM（一）</a>
                     <p class="is-size-7 is-uppercase">
                         <a class="has-link-grey -link" href="/categories/Machine-Learning/">Machine Learning</a>
                     </p>
@@ -449,7 +449,7 @@
     
     <div class="card-image">
         <span  class="image is-7by1">
-            <img class="thumbnail" src="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM">
+            <img class="thumbnail" src="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）">
         </span>
     </div>
     
@@ -467,7 +467,7 @@
                 <span class="level-item has-text-grey">
                     
                     
-                    9 minutes read (About 1290 words)
+                    11 minutes read (About 1642 words)
                 </span>
                 
                 
@@ -476,11 +476,11 @@
         
         <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
             
-                Code Analysis Of SMO Algorithm And The Summary Of SVM
+                Code Analysis Of SMO Algorithm And The Summary Of SVM（一）
             
         </h1>
         <div class="content">
-            <p>&ensp;&ensp;<br>Recently, I have read relevant theoretical knowledge of support vector machine(SVM) and the code implementation of SMO. The main idea is to find a dividing hyperplane in a given data set D.<br>&ensp;&ensp;From Finding the optimal conditions for the maximum interval, converting constraint equations by using Lagrangian dual method and KKT conditions, using SMO algorithm to solve the optimal solution. Last, by using kernel functions to Map to high-dimensional spaces and solve nonlinear classification problems.<br> <a id="more"></a></p>
+            <p>&ensp;&ensp;Recently, I have read relevant theoretical knowledge of support vector machine(SVM) and the code implementation of SMO. The main idea is to find a dividing hyperplane in a given data set D.<br>&ensp;&ensp;From Finding the optimal conditions for the maximum interval, converting constraint equations by using Lagrangian dual method and KKT conditions, using SMO algorithm to solve the optimal solution. Last, by using kernel functions to Map to high-dimensional spaces and solve nonlinear classification problems.<br> <a id="more"></a></p>
 <h1 id="一、SVM总结"><a href="#一、SVM总结" class="headerlink" title="一、SVM总结"></a>一、SVM总结</h1><h2 id="1、SVM模型分类"><a href="#1、SVM模型分类" class="headerlink" title="1、SVM模型分类"></a>1、SVM模型分类</h2><p>&ensp;&ensp;1）线性可分支持向量机——硬间隔支持向量机（硬间隔最大化）——训练数据线性可分<br>&ensp;&ensp;2）线性支持向量机——软间隔支持向量机（软间隔最大化）——训练数据近似线性可分<br>&ensp;&ensp;3）非线性支持向量机——核技巧及软间隔最大化——训练数据线性不可分</p>
 <h2 id="2、间隔和支持向量"><a href="#2、间隔和支持向量" class="headerlink" title="2、间隔和支持向量"></a>2、间隔和支持向量</h2><p>&ensp;&ensp;以二分类（两属性）为例，如图，样本分布在样本空间上，需要寻找一个超平面将不同样本分开，从图中可知正中间鲁棒性最好。如何确定其方程？</p>
 <div align="center"><img src="https://ae01.alicdn.com/kf/H3dac5bf5d7b84692b4793640e6271e277.jpg" referrer="no-referrer" width="50%"></div>
@@ -522,7 +522,7 @@ $$f(x) = w^Tx+b = \displaystyle \sum^m_{i=1} a_iy_ix_i^Tx+b$$
 &ensp;&ensp;根据模型方程和KKT条件可以发现最终模型只与支持向量有关，
 
 <p>&ensp;&ensp;1)若$a_i=0$，样本不出现在$f(x)$表达式中，不影响。</p>
-<p>&ensp;&ensp;2)若$a_i&gt;0$，则有y_if(x_i) = 1，样本点位于最大间隔边界上，是一个支持向量。</p>
+<p>&ensp;&ensp;2)若$a_i&gt;0$，则有$y_if(x_i) = 1$，样本点位于最大间隔边界上，是一个支持向量。</p>
 <p>&ensp;&ensp;对于优化方程的求解，我们在后面的SMO算法进行求解。</p>
 <h2 id="4、软间隔与正则化（近似线性可分）"><a href="#4、软间隔与正则化（近似线性可分）" class="headerlink" title="4、软间隔与正则化（近似线性可分）"></a>4、软间隔与正则化（近似线性可分）</h2><p>&ensp;&ensp;现实情况很难找到一个超平面将训练样本完全分开，即使找到也不确定是否是过拟合。</p>
 <div align="center"><img src="https://ae01.alicdn.com/kf/Hcabe60ec449d49948ec0ab75b1de58d3p.jpg" referrer="no-referrer" width="50%"></div>
@@ -532,12 +532,25 @@ $$y_i(w^Tx+b)-1 \geq 0$$
 $$min_{w,b}{1 \over 2} ||w||^2+C\displaystyle \sum^m_{i=1} max(0,1-y_i(w^Tx_i+b))$$
 &ensp;&ensp;C>0是惩罚系数，可理解为一般ML问题的正则化参数，C越大，对误分类惩罚越大，当C无穷大时，迫使所有样本分类正确，即硬间隔SVM问题。C越小，对误分类惩罚越小。
 
-<p>&ensp;&ensp;引入松弛变量$\xi_i$ , 优化方程为，</p>
+<p>&ensp;&ensp;引入松弛变量$\xi_i$ , 每个样本都有一个对应的松弛变量，以表征样本不满足约束的程度，优化方程为，</p>
 <div align="center">$min_{w,b}{1 \over 2} ||w||^2+C\displaystyle \sum^m_{i=1} \xi_i$</div>
 <div align="center">$s.t. y_i(w^Tx+b) \geq 1-\xi_i$</div>
 <div align="center">$\xi_i \geq 0$</div>
 &ensp;&ensp;即软间隔支持向量机。
 
+<p>&ensp;&ensp;软间隔的拉格朗日函数为，</p>
+<div align="center"><img src="https://ae01.alicdn.com/kf/H3ed30612a36340fda1ca513362f0c565h.jpg" referrer="no-referrer" width="80%"></div>
+&ensp;&ensp;同硬间隔SVM，对$L(w,b,a,\xi,u)$求偏导可得，
+<div align="center"><img src="https://ae01.alicdn.com/kf/H176fbba1da67443b9800913d8066606c6.jpg" referrer="no-referrer" width="50%"></div>
+&ensp;&ensp;利用对偶问题转换得到软间隔SVM的优化方程为，
+<div align="center"><img src="https://ae01.alicdn.com/kf/Hf5835ee8afbe4d68bf96fee35f87af077.jpg" referrer="no-referrer" width="50%"></div>
+&ensp;&ensp;KKT条件为，
+<div align="center"><img src="https://ae01.alicdn.com/kf/H5ab688441e034260b126569661e80426K.jpg" referrer="no-referrer" width="50%"></div>
+&ensp;&ensp;我们分析软间隔SVM中样本与最终模型的关系，
+
+<p>&ensp;&ensp;1)若 $a_i=0$，则 $u_i = C, \xi_i=0$，所以 $y_i f(x_i) \geq 1 - \xi_i = 1$，样本在间隔边界上或正确分类，对f(x)无影响。</p>
+<p>&ensp;&ensp;2)若 $0 &lt; a_i &lt; C $，则 $u_i = C - a_i &gt; 0, \xi_i=0$，所以 $y_i f(x_i) = 1 - \xi_i = 1$，样本在间隔边界上，为支持向量。</p>
+<p>&ensp;&ensp;3)若 $a_i=C$，则 $u_i = 0, y_i f(x_i) = 1 - \xi_i， \xi_i$有三种情况：<br>&ensp;&ensp;&ensp;&ensp;【1】若 $0 \leq \xi_i \leq 1$，所以 $0 \leq y_i f(x_i) = 1 - \xi_i \leq 1$，样本点被分类正确，在自己类边界和超平面之间。<br>&ensp;&ensp;&ensp;&ensp;【2】若 $ \xi_i = 1$，所以 $0 \leq y_i f(x_i) = 1 - \xi_i = 0$，样本点在超平面上，无法正确分类。<br>&ensp;&ensp;&ensp;&ensp;【3】若 $\xi_i &gt; 1$，所以 $0 \leq y_i f(x_i) = 1 - \xi_i &lt; 0$，样本点在超平面另一侧，点会被分类错误。</p>
 
         </div>
         
@@ -602,14 +615,14 @@ $$min_{w,b}{1 \over 2} ||w||^2+C\displaystyle \sum^m_{i=1} max(0,1-y_i(w^Tx_i+b)
             
             <a href="/2019/09/10/SMO/" class="media-left">
                 <p class="image is-64x64">
-                    <img class="thumbnail" src="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM">
+                    <img class="thumbnail" src="https://ae01.alicdn.com/kf/Hc2cb9717dad047b6ad7815170801ca78c.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）">
                 </p>
             </a>
             
             <div class="media-content">
                 <div class="content">
                     <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-10T02:29:47.000Z">2019-09-10</time></div>
-                    <a href="/2019/09/10/SMO/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Code Analysis Of SMO Algorithm And The Summary Of SVM</a>
+                    <a href="/2019/09/10/SMO/" class="title has-link-black-ter is-size-6 has-text-weight-normal">Code Analysis Of SMO Algorithm And The Summary Of SVM（一）</a>
                     <p class="is-size-7 is-uppercase">
                         <a class="has-link-grey -link" href="/categories/Machine-Learning/">Machine Learning</a>
                     </p>
@@ -717,7 +730,7 @@ $$min_{w,b}{1 \over 2} ||w||^2+C\displaystyle \sum^m_{i=1} max(0,1-y_i(w^Tx_i+b)
             <div class="level-start has-text-centered-mobile">
                 <a class="footer-logo is-block has-mb-6" href="/">
                 
-                    <img src="https://ae01.alicdn.com/kf/H51473c5216964da287a7556080e0b00be.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM" height="28">
+                    <img src="https://ae01.alicdn.com/kf/H51473c5216964da287a7556080e0b00be.jpg" alt="Code Analysis Of SMO Algorithm And The Summary Of SVM（一）" height="28">
                 
                 </a>
                 <p class="is-size-7">
