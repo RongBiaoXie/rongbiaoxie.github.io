@@ -47,6 +47,7 @@ record 空间中存的就是上层用户写入的一行行记录 (rec_t)，Innod
 ## 4 cursor 搜索
 用户通过 SQL 下发操作的指令和要操纵的数据，通过 MySQL server 层的解析，在传入 innodb 引擎层时，会将需要操作的记录转换成 InnoDB 内存的记录格式（dtuple），以及表中具体行的增、删、改、查操作。dtuple 格式的内容比较直接，和 rec_t 中的数据部分是一致的，在操作时临时分配创建的。
 要操作一个表的数据，首先要通过 dtuple 中的 key fields 和逻辑上 btree 定位到数据存储的物理位置 (rec_t)，这在 innodb 通过 cursor 搜索来实现的，每次 open 一个 cursor 都会开启一个从 btree root 结点搜索到指定层级的 record 的搜索过程。在搜索时指定<b>搜索模式</b>（search_mode）,<b>并发控制的加锁模式</b> (latch_mode) 以及 <b>搜索过程的行为</b> (flag)。Innodb 中 search mode 是考虑到在 page 内部进行二分查找时定位在哪个 record，考虑到不同 record 的查找需求，有以下 4 种。：
+
 * PAGE_CUR_G: > 查询，查询第一个大于 dtuple 的 rec_t
 * PAGE_CUR_GE: >=，> 查询，查询第一个大于等于 dtuple 的 rec_t
 * PAGE_CUR_L: < 查询，查询最后一个小于 dtuple 的 rec_t
@@ -58,6 +59,7 @@ record 空间中存的就是上层用户写入的一行行记录 (rec_t)，Innod
 <center>图 4: Cursor 定位流程 </center>
 
 cursor 搜索整个核心操作在 btr_cur_search_to_nth_level 中。这个函数较为复杂，省去 AHI 和 spatial index 以及下一节介绍的并发控制逻辑，主要流程是：
+
 1. 从 dict_index_t 元信息中拿到 root page 在物理文件的 page no（默认是 4）。
 2. 从 buffer_pool 中根据 page no 拿 page（buf_page_get_gen），buffer pool 模块会根据 page 是否被缓存来决定是从内存中还是磁盘中读取，并根据加锁策略对 page 加锁。
 3. 对 page 内部的 record list 进行二分搜索 (page_cur_search_with_match)，Innodb 的二分搜索是在图 2 中 directory slot 指向 record 进行的，先定位到<b>相邻的两个 slot</b>，在两个 slot 范围内进行线性搜索将 dtuple 与 rec_t 逐个进行比较，确定小于和大于等于 dtuple 的相邻 rec_t（low_rec 和 up_rec），并将 low_rec 和 up_rec 匹配的 fields 数记录下来（low_match 和 up_match），最后根据 search_mode 进行选取 rec_t。
@@ -84,6 +86,7 @@ Btree 是树状组织的数据结构，在访问加 latch 需要满足一定顺�
 对于读操作（BTR_SEARCH_LEAF），不会引起 btree 结构发生变化，对 index latch 加 S 锁，一路顺着 cursor 搜索路径，沿路对 page 加 S 锁，直到达 leaf page。
 
 对于修改操作时，分为两种情况，认为当前修改不影响 btree 结构的乐观修改（BTR_MODIFY_LEAF）、以及认为当前修改会使得 btree 结构发生变化的悲观修改（BTR_MODIFY_TREE），两种搜索加锁策略的粒度是不同的，如图 6 所示。
+
 * 乐观修改和读操作类似，会对 index latch 加 S 锁，一路顺着 cursor 搜索路径，沿路对 page 加 S 锁，到 leaf page 加 X 锁进行修改即可。
 * 悲观修改加锁更为复杂，首先对 index latch 加 SX 锁，即此时仅允许一个悲观修改访问 btree，但允许并发的读操作和乐观修改。顺着 cursor 搜索路径，初始时不对沿路 page 加锁（此时其他访问不可能修改非叶子 page），当访问到 leaf page 的 parent 时，会对进行两层判断，如果修改会及联修改 parent 的父结点以上，这时到达 leaf page 时会将沿路的 page 重新加上 X 锁，如果 btree 的修改仅限于 parent，这时仅将 parent 的锁加上。当到达 leaf page 时，会将 leaf page 及其前后的 page 都加上 latch (需要修改前后 page 的指向)。
 
@@ -106,6 +109,7 @@ Btree 是树状组织的数据结构，在访问加 latch 需要满足一定顺�
 主键索引的插入流程在 row_ins_clust_index_entry 函数中，先进行加锁范围更小的乐观插入流程，如果插入失败（page 空间不足），会进行悲观插入流程，加锁范围更大，并触发结点分裂流程，这也和 cursor 的乐观悲观搜索相对应。
 
 控制乐观和悲观插入流程在 row_ins_clust_index_entry_low 中，根据 latch_mode 进行判断，每次都开启一个新的 mtr 流程，我们先看乐观插入:
+
 * 先进行<b>乐观 cursor 搜索</b> (BTR_MODIFY_LEAF)，定位到 leaf page 的 rec_t 中。
 * <b>duplicate check</b>: 检查定位的 rec_t 是否和要插入的 entry 相等，存在重复，会将可能相等的 record 都加上事务锁（普通 insert 加 S lock，insert on duplicate key update 则加 X lock，gap mode 取决于事务隔离级别），保证不被其他事务修改。如果 rec_t 不是 delete mark，向上层返回 duplicate key 错误，如果是 delete mark，将插入流程转为 update-in-place 覆盖写入（row_ins_clust_index_entry_by_modify）。
 * 否则进入<b>乐观插入</b>（btr_cur_optimistic_insert），首先会计算插入 entry 空间，先判断 page 中 free list 空间是否足够，free list 空间不够，再判断 page 中未分配的堆的空间，如果还是不够，会判断 reorganize page 后的空间（整理 page 内部的空间碎片），如果存在空闲空间，将 entry 内容 copy 到申请的 rec_t 中，并更新 rec_t 和 page 的元信息，否则会进行悲观插入。
@@ -117,11 +121,13 @@ Btree 是树状组织的数据结构，在访问加 latch 需要满足一定顺�
 
 ### 6.2 结点分裂
 如果 cursor 搜索到的 leaf page 剩余空间不足以容纳待插入的 entry，会触发悲观插入流程，腾出插入的空间：
+
 * 先进行**悲观的 cursor 搜索流程**，将涉及的 page 的 latch 都加上。
 * 检查事务锁和记录 undo。
 * 进行**结点分裂**，最后将 entry 插入到分裂后的 page 中，写 redo。
 
 整个结点分裂过程在 btr_page_split_and_insert 中，如图 7 所示，主要是:
+
 * 选择原 page 的分裂点 (split_rec)。
 * 生成新 page，将原 page 的部分 record list 批量 move 到新 page 中，这里会写 move 相关的 redo（包括原 page 的 delete 和新 page 的 insert）。
 * 修改前后 page 的指针指向、在 parent page 新增一个 index record 指向新 page（触发新的插入流程）。
@@ -130,6 +136,7 @@ Btree 是树状组织的数据结构，在访问加 latch 需要满足一定顺�
 <center>图 7: 结点分裂流程 </center>
 
 原 page 的分裂点的选择，为了性能考虑，Innodb 采用了两种策略[8]：
+
 * 将原始页面中 50% 数据移动到新页面，这是最普通的分裂方法。
 * 为了优化上述中间点分裂在顺序插入场景的问题，InnoDB 实现了在插入点分裂的方法，在每个 page 上记录上次插入位置 （PAGE_LAST_INSERT），以此判断本次插入是否递增或者递减，如果判定为顺序插入，就在当前插入点进行分裂。
 
