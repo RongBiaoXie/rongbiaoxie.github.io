@@ -1,12 +1,11 @@
----
-title : MySQL 引擎特性 · Innodb 中的 Btree 实现 (一) · 引言 & insert 篇
-author : 归墨
----
+
+# Innodb 中的 Btree 实现 (一) · 引言 & insert 篇
+
 > 本文内容基于 MySQL Community 8.0.13 Version
 
 ## 1 背景
 
-Btree 自 1970 年 Bayer 教授提出后，一直是关系型数据库中核心数据结构，基于多路的分叉树，将数据范围自上而下不断缩小，直到需要的记录，通常在数据库中一个 Btree 结点能展开几百上千个分叉，数据的搜索范围呈指数级下降，极大地减少了数据访存次数，提升搜索效率。对于 B-tree 的基础操作，如插入、删除、更新，以及分裂/合并等操作操作已有大量的文献介绍，如果需要了解或有所疑问，可以参考文章末尾的参考文献 [3]。在伴随着高并发和需要考虑事务处理的数据库系统下，Btree 索引往往需要考虑更为复杂的场景。本文深入 MySQL Innodb 引擎，介绍 Innodb 中 Btree 的组织形式以及操作数据的具体实现，着重考虑其在高并发访问时，如何保证数据、Btree 结构的一致性，以及如何结合考虑事务的 ACID 特性。
+Btree 自 1970 年 Bayer 教授提出后，一直是关系型数据库中核心数据结构，基于多路的分叉树，将数据范围自上而下不断缩小，直到需要的记录，通常在数据库中一个 Btree 结点能展开几百上千个分叉，数据的搜索范围呈指数级下降，极大地减少了数据访存次数，提升搜索效率。对于 B-tree 的基础操作，如插入、删除、更新，以及分裂/合并等操作已有大量的文献介绍，如果需要了解或有所疑问，可以参考文章末尾的参考文献 [3]。在伴随着高并发和需要考虑事务处理的数据库系统下，Btree 索引往往需要考虑更为复杂的场景。本文深入 MySQL Innodb 引擎，介绍 Innodb 中 Btree 的组织形式以及操作数据的具体实现，着重考虑其在高并发访问时，如何保证数据、Btree 结构的一致性，以及如何考虑事务的 ACID 特性。
 
 > It could be said that the world’s information is at our fingertips because of B-trees.
 
@@ -20,14 +19,14 @@ Innodb 是一种行存的存储引擎，一条记录（record）对应于数据�
 
 对于二级索引，会生成一颗新的 btree，使用主键索引 value 中的某些 field 作为新的 btree 的 key，主键索引的 key 作为新的 btree 的 value，先从二级索引定位到主键索引的 key，再回主键索引拿到完整的记录，避免当以主键索引的 value 作为搜索条件时进行全表扫描的开销，提高搜索效率。
 
-![image](iot.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/iot.png)
 <center>图 1: Innodb 的索引组织表形式 </center>
 
 ## 3 索引页和行结构
 
 在 Innodb 中，对于任何数据的查询和修改，最终都是落在磁盘物理文件的访问操作中。简单来说，是通过 btree 定位到具体的物理 page，对 page 内部的 record 进行增删改查。Btree Page 内部本身可以看作一个有序的 record <b>单向链表</b>，通过一些元信息对 16 KB 的物理空间进行高效管理和组织。每个 Page 中存在两个特殊的 record：infimum record 和 supremum record，分别代表 page 中 record 的无穷小和无穷大，位于 record 链表的头和尾。如图 2 所示，在 record 链表上，每间隔几个 record 会选取一个 record 作为 directory slot，这样查找时先二分搜索定位到具体的 slot，在 slot 进一步线性搜索定位到具体的 record。默认初始时，存在两个 directory slot，分别指向 infimum 和 supremum，随着 page 中 record 不断插入和删除，directory slot 的数目也会动态变化。
 
-![image](rec-dir.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/rec-dir.png)
 <center>图 2: direction slot  </center>
 
 Innodb Btree 中无论是叶子结点，还是非叶子结点，都有着相同 page 和 record 格式，图 3 给出了 Innodb 中索引 page 和 record 的物理格式（page_t 和 rec_t），对于 page 可以分为四个部分：page 本身的元信息、用于 btree 和 record 组织的索引元信息、record 空间和 directory slot 空间。
@@ -42,7 +41,7 @@ record 空间中存的就是上层用户写入的一行行记录 (rec_t)，Innod
 * Header 元信息，在代码中以 Extra data 形容：首先是变长列的长度数组，这是按列的顺序存储的。第二部分存了行中为 NULL 的记录的 bitmap，这个 bitmap 的大小由索引元信息中最多允许多少个 NULL 的记录决定。<b>后面多个字段决定当前 record 的状态</b>，delete mark 标记当前 record 是否被删除（Innodb 中用户删除 record 都是标记删除，真正物理删除是由后台 purge 线程触发，保证没有其他用户并发访问时执行）。Min rec flag 标记当前 record 是否是非叶子层的最小值，使得搜索小于 btree 所有行时，能够定位在最小的叶子结点上。N_owned 是用于作为 directory slot 指向的 record 使用，说明了当前 directory slot 包含的 record 数目，用于判断是否需要分裂或者收缩 directory slot。Page 中整个 record 空间是一个堆，每分配一个新的 Record，都会分配一个 heap no，这个 heap no 在事务系统中也用于唯一确定 page 内部 一个行锁对象。Status 标识了当前 record 状态：data record（ORDINARY）/ index record（NODE_PTR）/ INFIMUM / SUPREMUM。Next 指向 record 链中下一 record 在 page 内部的偏移。
 * data 数据部分：这是用户数据真正存储的位置，首先是 key fields，用于 record 的比较，唯一确定一个 record 在 Btree 的位置。Trx ID 和 Roll ptr 分别是最新修改的事务 ID 以及用于回滚和 MVCC 构建版本的回滚指针。后面的 Value fields 则是非 key 的列数据。
 
-![image](innodb-page-rec.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/innodb-page-rec.png)
 <center>图 3: Innodb 的索引页和行结构 </center>
 
 ## 4 cursor 搜索
@@ -55,7 +54,7 @@ record 空间中存的就是上层用户写入的一行行记录 (rec_t)，Innod
 
 插入操作的 search_mode 默认是 PAGE_CUR_LE，即插在最后一个小于等于该 dtuple 的 rec_t 后。
 
-![image](cursor.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/cursor.png)
 <center>图 4: Cursor 定位流程 </center>
 
 cursor 搜索整个核心操作在 btr_cur_search_to_nth_level 中。这个函数较为复杂，省去 AHI 和 spatial index 以及下一节介绍的并发控制逻辑，主要流程是：
@@ -75,7 +74,7 @@ cursor 搜索的结果在 Innodb 是可以复用，持久化为 persist cursor�
 
 ## 5 并发控制
 对于一个需要支持大量并发业务的实时事务处理 OLTP 系统而言，并发控制策略成了数据库 btree 实现的关键，在多线程并发搜索、查询、修改过程中，保持 Btree 结构的一致性。Innodb 中对于 btree page 的操作都被包含在一个 mini-transaction（mtr）中，用户线程操作 btree 前开启一个 mtr，在操作 btree 过程中，将访问的 page 指针、请求的锁 latch、以及产生的 redo log 分别挂在 mtr 上，当操作流程结束提交 mtr 时，将 redo log 同步到全局 log buffer 中，将脏页加入 flush list 上，最后释放所有持有的 latch。真正修改只有在 mtr commit 提交，redo 落盘才生效，因此 mtr 的实现将上层对记录的操作可以看作一个对 btree 的原子操作，也是 cursor 搜索并发控制的基本单位。
-![image](mtr.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/mtr.png)
 <center>图 5: lifecycle of mini-transaction (mtr) </center>
 
 Innodb 对于 btree 修改的保证还是基于锁 latch 实现的，访问任何一个 page 内容都需要持有其 latch，读加 S 锁，写加 X 锁。除此之外，还有一种 SX 锁类型，与 S 锁兼容，与其他 SX 和 X 锁互斥，独占写权限但允许读。同时为了保证因 page 满或者稀疏而分裂或合并引起 btree 结构发生变化时的正确性，Innodb 还有一把整个 index 的全局 latch，在 dict_index_t 元信息中。
@@ -93,7 +92,7 @@ Btree 是树状组织的数据结构，在访问加 latch 需要满足一定顺�
 在 Innodb 中，某些场景需要获取某个 dtuple 的前一个 page (BTR_SEARCH_PREV 和 BTR_MODIFY_PREV)，例如向前 range scan 需要跨 page 到前一个 record 时。由于加锁顺序问题，无法在持有当前 page 的 latch 拿去 previous page 的 latch，因此需要从 btree root 重新遍历，在持有 previous page 的 parent 的 latch 的情况下，释放当前 page 的 latch，获取 previous 的 page 的 latch。这里遍历加锁时候，还要特殊处理 previous page 和 当前 page 不在同一个 parent 的情况。
 
 
-![image](btree-latch.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/btree-latch.png)
 <center>图 6: 乐观修改加锁路径（左）、悲观修改加锁路径（右） </center>
 
 ## 6 Insert 路径解析
@@ -127,7 +126,7 @@ Btree 是树状组织的数据结构，在访问加 latch 需要满足一定顺�
 * 生成新 page，将原 page 的部分 record list 批量 move 到新 page 中，这里会写 move 相关的 redo（包括原 page 的 delete 和新 page 的 insert）。
 * 修改前后 page 的指针指向、在 parent page 新增一个 index record 指向新 page（触发新的插入流程）。
 * 根据 entry 和 split_rec 的大小关系，将 entry 插入到原 page 或者新 page 中的一个。
-![image](split.png)
+![image](https://rongbiaoxie.github.io/images/mysql-btree/split.png)
 <center>图 7: 结点分裂流程 </center>
 
 原 page 的分裂点的选择，为了性能考虑，Innodb 采用了两种策略[8]：

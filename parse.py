@@ -5,6 +5,11 @@ output_path = "blogs"
 
 papers = glob.glob(input_path + "/*")
 
+template = ""
+
+with open("blogs-template.html", "r") as f:
+    template = f.read()
+
 for paper in papers:
     title = os.path.basename(paper)
     md_path = os.path.join(input_path, title, title + ".md")
@@ -12,4 +17,4 @@ for paper in papers:
         text = f.read()
         html = markdown.markdown(text)
         with open(output_path+"/"+title+".html", "w") as fw:
-            fw.write(html)
+            fw.write(template.replace("{%=content %}", html))
