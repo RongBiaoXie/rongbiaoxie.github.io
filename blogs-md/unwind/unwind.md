@@ -100,30 +100,46 @@ DWARF 是一种补充的调试信息，在编译时构建了一张映射表 .eh_
   DW_CFA_offset: r12 (r12) at cfa-40
   DW_CFA_advance_loc: 8 to 0000000000400599
   DW_CFA_def_cfa_offset: 48
-  DW_CFA_offset: r6 (rbp) at cfa-48
-  DW_CFA_advance_loc: 8 to 00000000004005a1
-  DW_CFA_def_cfa_offset: 56
-  DW_CFA_offset: r3 (rbx) at cfa-56
-  DW_CFA_advance_loc: 13 to 00000000004005ae
-  DW_CFA_def_cfa_offset: 64
-  DW_CFA_advance_loc: 44 to 00000000004005da
-  DW_CFA_def_cfa_offset: 56
-  DW_CFA_advance_loc: 1 to 00000000004005db
-  DW_CFA_def_cfa_offset: 48
-  DW_CFA_advance_loc: 1 to 00000000004005dc
-  DW_CFA_def_cfa_offset: 40
-  DW_CFA_advance_loc: 2 to 00000000004005de
-  DW_CFA_def_cfa_offset: 32
-  DW_CFA_advance_loc: 2 to 00000000004005e0
-  DW_CFA_def_cfa_offset: 24
-  DW_CFA_advance_loc: 2 to 00000000004005e2
-  DW_CFA_def_cfa_offset: 16
-  DW_CFA_advance_loc: 2 to 00000000004005e4
-  DW_CFA_def_cfa_offset: 8
-  DW_CFA_nop
+...
 </pre></div></div>
 
 基于这些调试信息，除了简单的计算基于 rsp 的偏移值，DWARF 还设计了灵活的 expression 表达式来实现复杂的调试信息计算，这里没有深究，mark 一下[4]。
+
+通过栈空间的栈桢回溯，我们就能拿到函数调用链的每个函数起始的 PC，再通过 ELF 文件中的 sysboms 符号表，将堆栈用便于调试者理解的形式展现出来。
+
+符号表分为 .dynsym 和 .symtab，.dynsym 保存了引用来自外部文件符号的全局符号，如 printf 函数，这是运行时必须的，会被装载进内存。而 .symtab 保存了 elf 文件的本地符号，如全局变量，代码中定义的本地函数等，更多是调试时使用。.dynsym 是 .symtab 的子集。
+
+ELF 文件的符号表可以通过 readelf -s 来查看，如前面使用的 PC=0400580 对应的是 __libc_csu_init 函数。
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+# readelf -s test
+
+Symbol table '.dynsym' contains 4 entries:
+   Num:    Value          Size Type    Bind   Vis      Ndx Name
+     0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT  UND
+     1: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND printf@GLIBC_2.2.5 (2)
+     2: 0000000000000000     0 NOTYPE  WEAK   DEFAULT  UND __gmon_start__
+     3: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@GLIBC_2.2.5 (2)
+
+Symbol table '.symtab' contains 63 entries:
+   Num:    Value          Size Type    Bind   Vis      Ndx Name
+...
+    48: 00000000004005f0     2 FUNC    GLOBAL DEFAULT   13 __libc_csu_fini
+    49: 0000000000400470     0 FUNC    GLOBAL DEFAULT   13 _start
+    50: 0000000000000000     0 NOTYPE  WEAK   DEFAULT  UND __gmon_start__
+    51: 00000000004005f4     0 FUNC    GLOBAL DEFAULT   14 _fini
+    52: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND __libc_start_main@@GLIBC_
+    53: 0000000000400600     4 OBJECT  GLOBAL DEFAULT   15 _IO_stdin_used
+    54: 0000000000601030     0 NOTYPE  GLOBAL DEFAULT   24 __data_start
+    55: 0000000000601038     0 OBJECT  GLOBAL HIDDEN    24 __TMC_END__
+    56: 0000000000400608     0 OBJECT  GLOBAL HIDDEN    15 __dso_handle
+    57: 0000000000400580   101 FUNC    GLOBAL DEFAULT   13 __libc_csu_init
+    58: 0000000000601034     0 NOTYPE  GLOBAL DEFAULT   25 __bss_start
+    59: 0000000000601038     0 NOTYPE  GLOBAL DEFAULT   25 _end
+    60: 0000000000601034     0 NOTYPE  GLOBAL DEFAULT   24 _edata
+    61: 000000000040055d    29 FUNC    GLOBAL DEFAULT   13 main
+    62: 0000000000400408     0 FUNC    GLOBAL DEFAULT   11 _init
+</pre></div></div>
 
 除此之外，DWARF 还描述了源代码中的一些实体，如编译单元、函数、类型、变量等。要么直接嵌入到代码对象可执行文件的部分中，要么分割成引用的单独文件。
 
