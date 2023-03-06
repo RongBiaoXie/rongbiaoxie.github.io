@@ -95,7 +95,7 @@
             Menu
         </h3>
         <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2023-03-06</time></div>
-        <p><li><a href="blogs/mysql-btree2.html">Innodb 中的 Btree 实现 (二) · select 篇</a></li></p>
+        <p><li><a href="https://rongbiaoxie.github.io/blogs/mysql-btree2.html">Innodb 中的 Btree 实现 (二) · select 篇</a></li></p>
         <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2023-01-11</time></div>
         <li> <a href="https://rongbiaoxie.github.io/blogs/unwind.html">Stack Unwind 堆栈回溯</a> </li>
         <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2022-12-27</time></div>
@@ -124,7 +124,7 @@
 
 <p>Innodb Btree 实现文章合集: </p>
 <p><a href="https://zhuanlan.zhihu.com/p/594678689">Innodb 中的 Btree 实现 (一) · 引言 &amp; insert 篇</a></p>
-<p><a href="https://zhuanlan.zhihu.com/p/594678689">Innodb 中的 Btree 实现 (二) · select 篇</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/611668432">Innodb 中的 Btree 实现 (二) · select 篇</a></p>
 <blockquote>
 <p>本文内容基于 MySQL Community 8.0.13 Version</p>
 </blockquote>
@@ -184,8 +184,10 @@
 </ul>
 <p>Index_read 会把定位的 record 和 search_tuple 进行比较，不满足条件会返回 record 不存在错误，RR 隔离级别往上会加上 Gap 锁，防止事务提交前其他线程插入满足条件的数据。</p>
 <p>接下来，对于序列化级别或者 Select for update 的 lock read 类型，会对 record 加逻辑事务锁，基于事务隔离级别，RC 加 LOCK_REC_NOT_GAP 锁，RR 加 NEXT_KEY 锁。加锁失败会 store cursro，等待相应逻辑锁释放，重试。</p>
-<p>如果是不加事务锁的一致性读，READ_UNCOMMITTED 无需考虑任何事，否则先判断 record 的当前版本是否可见，主键索引使用 record 的 trx_id 值和前面获取的 read_view 判断是否可见，不可见则需要遍历 undo 链，构建旧版本进行读取。对于二级索引使用 page 上的 max_trx_id 来粗粒度地判断，如果不可见，需要回到主键索引拿完整的 record 进行判断。
-* ICP (index condition pushdown) check，这里做了一个优化，mysql 将 where 的谓词中的条件下推到引擎，这样二级索引回表前，主键索引返回 server 层时，先进行 ICP 判断，如果已经不满足条件，无需再回主键索引进一步判断可见性了。</p>
+<p>如果是不加事务锁的一致性读，READ_UNCOMMITTED 无需考虑任何事，否则先判断 record 的当前版本是否可见，主键索引使用 record 的 trx_id 值和前面获取的 read_view 判断是否可见，不可见则需要遍历 undo 链，构建旧版本进行读取。对于二级索引使用 page 上的 max_trx_id 来粗粒度地判断，如果不可见，需要回到主键索引拿完整的 record 进行判断。</p>
+<ul>
+<li>ICP (index condition pushdown) check，这里做了一个优化，mysql 将 where 的谓词中的条件下推到引擎，这样二级索引回表前，主键索引返回 server 层时，先进行 ICP 判断，如果已经不满足条件，无需再回主键索引进一步判断可见性了。</li>
+</ul>
 <p>ICP check 后，不满足条件直接将 cursor 移动到下一个 record，循环判断，否则将结果返回给上层。</p>
 <h2>4. 引用</h2>
 <p>[1] <a href="https://zhuanlan.zhihu.com/p/594678689">Innodb 中的 Btree 实现 (一) · 引言 &amp; insert 篇</a></p>
