@@ -81,6 +81,7 @@ Index_read 会把定位的 record 和 search_tuple 进行比较，不满足条�
 接下来，对于序列化级别或者 Select for update 的 lock read 类型，会对 record 加逻辑事务锁，基于事务隔离级别，RC 加 LOCK_REC_NOT_GAP 锁，RR 加 NEXT_KEY 锁。加锁失败会 store cursro，等待相应逻辑锁释放，重试。
 
 如果是不加事务锁的一致性读，READ_UNCOMMITTED 无需考虑任何事，否则先判断 record 的当前版本是否可见，主键索引使用 record 的 trx_id 值和前面获取的 read_view 判断是否可见，不可见则需要遍历 undo 链，构建旧版本进行读取。对于二级索引使用 page 上的 max_trx_id 来粗粒度地判断，如果不可见，需要回到主键索引拿完整的 record 进行判断。
+
 * ICP (index condition pushdown) check，这里做了一个优化，mysql 将 where 的谓词中的条件下推到引擎，这样二级索引回表前，主键索引返回 server 层时，先进行 ICP 判断，如果已经不满足条件，无需再回主键索引进一步判断可见性了。
 
 ICP check 后，不满足条件直接将 cursor 移动到下一个 record，循环判断，否则将结果返回给上层。
