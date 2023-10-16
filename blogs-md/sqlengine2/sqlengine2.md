@@ -19,13 +19,13 @@
 
 除此之外，还有 Join 条件，group 条件，order by 条件，limit 语句中也会包含 expression。
 
-![](https://rongbiaoxie.github.io/images/expression_list.png)
+![](https://rongbiaoxie.github.io/images/sqlengine/expression_list.png)
 
 ​	在 MySQL 中，这些 expression 在代码中是以树形的**继承类 Item** 表示。Item类很重要。是整个语句操作对象的基类，用于表示 expression 的不同组件，例如逻辑操作符、算术操作符、常量值、字段引用等等都是一个 item。例如整数使用 Item_int 表示，表示 SQL 中某个整数的常量值。相等运算符（=）使用 Item_func_eq 表示，可以计算其他两个 Item 的相等性。
 
 ​	根据这些类的性质，**可以以 Item 的树形式构造所有类型的表达式**，其中根节点的 Item 表示完整的表达式， 叶节点是涉及到的算子。如下图用 Item 表示了表达式 “age = 26 AND name = ’Peter’”。
 
-![](https://rongbiaoxie.github.io/images/item_tree.png)
+![](https://rongbiaoxie.github.io/images/sqlengine/item_tree.png)
 
 ​	为了衡量和执行 Item tree 表示的 expression，每个 Item 类实现了一系列的虚函数来计算 Item 的值。最值得注意的是 val_int() 方法，返回被衡量 Item 的 64 位 int 值。事实上，对于最基本的类型，都存在一组val_\<TYPE\>方法，它们计算给定类型 expression 的求值。
 
@@ -45,7 +45,7 @@
 
 为了了解 expression 在 MySQL 是怎么执行的，主要是看 query 在 MySQL 中的生命周期：parsing，preparing，optimizing 和 execution。下图是 MySQL 查询引擎的生命周期，每个组件的输入和输出，到最后怎么拿到真实的存储引擎的数据：数据流动过程是从 SQL statement 到 Query_block 到 AccessPath，到 Iterators，再到存储引擎。
 
-![](https://rongbiaoxie.github.io/images/mysql_query_engine.png)
+![](https://rongbiaoxie.github.io/images/sqlengine/mysql_query_engine.png)
 
 ### parser
 
@@ -96,7 +96,7 @@ Prepare 的另一个重要工作是简化 Query_block 的内容。优化 Item �
 
 在 mysql 代码中，不同 DML 类型的 Query_block 对应于不同 Sql_cmd_dml 类型的 prepare 函数，继续调用到 SELECT_LEX_UNIT::prepare() 。
 
-![](https://rongbiaoxie.github.io/images/prepare_transform.png)
+![](https://rongbiaoxie.github.io/images/sqlengine/prepare_transform.png)
 
 ### Optimizer
 

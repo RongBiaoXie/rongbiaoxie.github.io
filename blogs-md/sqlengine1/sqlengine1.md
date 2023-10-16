@@ -15,13 +15,13 @@
 
 编译器的一个例子是 GCC 或Clang (LLVM 的 C 前端)。编译器通常可以分为三个部分: 前端，优化器和后端。
 
-![](https://rongbiaoxie.github.io/images/compiler_overview.png) 
+![](https://rongbiaoxie.github.io/images/sqlengine/compiler_overview.png) 
 
 ​	
 
 ​	**前端**：负责面向源语言，并将其转换为可在编译器内部使用的**中间表示 (IR)**。前端通过首先运行词法分析(也称为 scanner) ，依次输出 token 流。token 是简单的字符集合和字符对应的类型，例如 “+=” 的类型是 “操作符”。然后将 token 流传递给 parser。parser 将 token 流转换为**抽象语法树** (AST)。同时，对 token 流进行推理并确保它是有意义的。**语义分析器** （semantic analyzer）负责确保输入语法上有意义。通常会有几个符号表 ，每个符号表对应一个作用域，可能是全局作用域、函数作用域或任何其他作用域。
 
-​	![](https://rongbiaoxie.github.io/images/lex_parser_example.png)
+​	![](https://rongbiaoxie.github.io/images/sqlengine/lex_parser_example.png)
 
 ​	图 2.2 是个前端解析的例子，经过词法分析得到 symbol 的符号表，通过 parser 和语法分析生成 AST。 AST 是一种树状结构，如图中的最下面这张图，其中包含关于每个 token 的一系列信息，并将其逻辑地放置以**用于创建 IR**。例如， AST 中的操作符将包含有关其操作数及其类型的信息，以便语义分析可以推断类型并确保可以创建结果。AST 还包含有关每个 token 在源代码中的位置的信息。这些信息有助于编译器报告潜在错误的位置。
 
@@ -41,7 +41,7 @@
 
 ​	任何关系数据库在从查询到结果时都将经历类似的步骤：parse, prepare, optimize 和 execute。从编译器的视角来看，parse 和 prepare 阶段可以看作同一个阶段，数据库中还会解析对应表中的 fields，类似编译器的语法分析。
 
-![](https://rongbiaoxie.github.io/images/database_query_flow.png)
+![](https://rongbiaoxie.github.io/images/sqlengine/database_query_flow.png)
 
 ​	当向数据库发送查询时，数据库运行 的第一步是 parse。parse 是数据库将明文的 SQL 查询语句转换为可操作的内容的第一步。这一步的结果是一个内部树状 C++ 结构 ，表示查询的各个部分。进行**语法和词法解析**。
 
@@ -67,7 +67,7 @@
 
 ​	图 2.5 显示了一个算子树，每个虚线包裹了一个 pipeline。
 
-​	![](https://rongbiaoxie.github.io/images/operator_tree.png)
+​	![](https://rongbiaoxie.github.io/images/sqlengine/operator_tree.png)
 
 ​	Volcano 模型的有点：扩展性好，使得加算子非常的简单，使用迭代接口。	在添加新算子无需考虑其他算子的执行。
 
