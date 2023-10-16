@@ -135,10 +135,10 @@
 <h2>1 编译和编译器</h2>
 <p>在计算机中，编译是一个通用术语，它描述了一个过程，该过程接受某种语言输入 (通常是编程语言) 并产生另一种语言的输出 (通常是机器码)。编译器是使用编译来产生一些可执行输出的程序。</p>
 <p>编译器的一个例子是 GCC 或Clang (LLVM 的 C 前端)。编译器通常可以分为三个部分: 前端，优化器和后端。</p>
-<p><img alt="" src="https://rongbiaoxie.github.io/images/compiler_overview.png" /> </p>
+<p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/compiler_overview.png" /> </p>
 <p>​   </p>
 <p>​   <strong>前端</strong>：负责面向源语言，并将其转换为可在编译器内部使用的<strong>中间表示 (IR)</strong>。前端通过首先运行词法分析(也称为 scanner) ，依次输出 token 流。token 是简单的字符集合和字符对应的类型，例如 “+=” 的类型是 “操作符”。然后将 token 流传递给 parser。parser 将 token 流转换为<strong>抽象语法树</strong> (AST)。同时，对 token 流进行推理并确保它是有意义的。<strong>语义分析器</strong> （semantic analyzer）负责确保输入语法上有意义。通常会有几个符号表 ，每个符号表对应一个作用域，可能是全局作用域、函数作用域或任何其他作用域。</p>
-<p>​   <img alt="" src="https://rongbiaoxie.github.io/images/lex_parser_example.png" /></p>
+<p>​   <img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/lex_parser_example.png" /></p>
 <p>​   图 2.2 是个前端解析的例子，经过词法分析得到 symbol 的符号表，通过 parser 和语法分析生成 AST。 AST 是一种树状结构，如图中的最下面这张图，其中包含关于每个 token 的一系列信息，并将其逻辑地放置以<strong>用于创建 IR</strong>。例如， AST 中的操作符将包含有关其操作数及其类型的信息，以便语义分析可以推断类型并确保可以创建结果。AST 还包含有关每个 token 在源代码中的位置的信息。这些信息有助于编译器报告潜在错误的位置。</p>
 <p>​   <strong>优化器</strong>：在前端之后，将 IR 做提前转化和优化，典型优化如：loop optimization, dead code elimination ，global value numbering。IR 通常比源语言更接近机器码，但保留与源语言相同的机器独立性。优化器在优化 IR 时不需要考虑硬件问题，并且可以将所有依赖于机器的函数留给编译器的后端部分。在转换和优化结束时， 优化器本身将输出 IR 的改进版本，表示与给出的 IR 相同的源代码。</p>
 <p>​   <strong>后端</strong>：从优化器获取 IR 的改进版本，并将其转换为可执行的与机器相关的机器代码。后端依赖于机器的原因是它必须考虑各种体系结构。后端一个较为重要的操作：寄存器分配，它将各种值和变量分配给 CPU 中有限数量的寄存器。寄存器分配实现更好的运行时性能。</p>
@@ -148,7 +148,7 @@
 <p>​   DBMS 通常会在 parse tree 上应用转换和优化，最终转换为<strong>逻辑执行计划</strong>，逻辑查询计划描述了查询的可能逻辑计算流。最后，优化器将逻辑执行计划转换为<strong>物理执行计划</strong>，该物理查询计划由执行器执行。DBMS的执行器可以看作是一个解释器 ，它接受物理查询计划并逐条记录执行它，<strong>这里的 parse tree，逻辑执行计划和物理执行计划会在后面具体介绍在 MySQL 的形式</strong>。</p>
 <h3>3 从 SQL 语句到结果的过程</h3>
 <p>​   任何关系数据库在从查询到结果时都将经历类似的步骤：parse, prepare, optimize 和 execute。从编译器的视角来看，parse 和 prepare 阶段可以看作同一个阶段，数据库中还会解析对应表中的 fields，类似编译器的语法分析。</p>
-<p><img alt="" src="https://rongbiaoxie.github.io/images/database_query_flow.png" /></p>
+<p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/database_query_flow.png" /></p>
 <p>​   当向数据库发送查询时，数据库运行 的第一步是 parse。parse 是数据库将明文的 SQL 查询语句转换为可操作的内容的第一步。这一步的结果是一个内部树状 C++ 结构 ，表示查询的各个部分。进行<strong>语法和词法解析</strong>。</p>
 <p>​   下一阶段 prepare，此时，数据库会解析 fields，确保查询是可执行的。解析 fields 涉及到从表的各个字段信息中做出<strong>类型推断</strong>。还将树结构中的字段节点绑定到具有相应类型的实际行引用，解析的另一个结果是，如果查询中引用的特定字段实际上不在对应的表中，并且无法解析，向前台报错。 当将查询的必要的 fields 解析后，数据库会进行优化，使得查询执行更加高效，如常量折叠（直接进行常量运算）和无用代码消除。此时得到<strong>逻辑查询计划</strong>。</p>
 <p>​   下一步是 optimize 阶段，根据前面的 prepare 后的 parse tree 的逻辑查询计划，得到具体的 <strong>物理执行计划</strong> 。生成的物理查询计划将描述执行器应该如何连接哪些表以使执行尽可能快速和有效 。找出哪些连接组合的过程可能是穷举的，但是当连接的数量增加时，穷举搜索很快就变得不可行了。</p>
@@ -161,7 +161,7 @@
 <p>​   <strong>形成算子执行的 pipeline：从上往下的控制流和从下往上的数据流</strong>。</p>
 <p>​   不是所有的算子都能一次处理一行数据; 这些算子被称为 <strong>pipeline breaker</strong>，需要等待子算子完成后才能开始处理数据，如 join，sort，group by。pipeline breaker 意味着许多查询，特别是复杂的查询，必须表示为多个pipeline。每个 pipeline 都形成一个类似临时表的实体，包含当前 pipeline 的结果数据，可以作为其他 pipeline 的输入数据。</p>
 <p>​   图 2.5 显示了一个算子树，每个虚线包裹了一个 pipeline。</p>
-<p>​   <img alt="" src="https://rongbiaoxie.github.io/images/operator_tree.png" /></p>
+<p>​   <img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/operator_tree.png" /></p>
 <p>​   Volcano 模型的有点：扩展性好，使得加算子非常的简单，使用迭代接口。   在添加新算子无需考虑其他算子的执行。</p>
 <p>​   Volcano 模型的最大缺点是大量重复 next() 的调用，占据大量的栈空间。程序内存空间中反复跳跃，降低 CPU 的分支预测率。</p>
 <p>​   从 MySQL 8.0 以后，采用了 Volcano 迭代器模型。</p>

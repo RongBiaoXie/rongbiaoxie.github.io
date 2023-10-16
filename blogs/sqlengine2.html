@@ -140,10 +140,10 @@
 </ul>
 <p>2 和 3 主要是 filter expression，通常由算数，比较算子构成。</p>
 <p>除此之外，还有 Join 条件，group 条件，order by 条件，limit 语句中也会包含 expression。</p>
-<p><img alt="" src="https://rongbiaoxie.github.io/images/expression_list.png" /></p>
+<p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/expression_list.png" /></p>
 <p>​   在 MySQL 中，这些 expression 在代码中是以树形的<strong>继承类 Item</strong> 表示。Item类很重要。是整个语句操作对象的基类，用于表示 expression 的不同组件，例如逻辑操作符、算术操作符、常量值、字段引用等等都是一个 item。例如整数使用 Item_int 表示，表示 SQL 中某个整数的常量值。相等运算符（=）使用 Item_func_eq 表示，可以计算其他两个 Item 的相等性。</p>
 <p>​   根据这些类的性质，<strong>可以以 Item 的树形式构造所有类型的表达式</strong>，其中根节点的 Item 表示完整的表达式， 叶节点是涉及到的算子。如下图用 Item 表示了表达式 “age = 26 AND name = ’Peter’”。</p>
-<p><img alt="" src="https://rongbiaoxie.github.io/images/item_tree.png" /></p>
+<p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/item_tree.png" /></p>
 <p>​   为了衡量和执行 Item tree 表示的 expression，每个 Item 类实现了一系列的虚函数来计算 Item 的值。最值得注意的是 val_int() 方法，返回被衡量 Item 的 64 位 int 值。事实上，对于最基本的类型，都存在一组val_\&lt;TYPE&gt;方法，它们计算给定类型 expression 的求值。</p>
 <p>​   例如，Item_func_eq 的 val_int() 方法计算树中另外两个子 item 的相等性， 其中要比较的算子是通过调用子 item 的 val_int () 方法提取的。</p>
 <p>​   MySQL 对于支持的数据类型 和 SQL 函数，都有一个 Item 派生类。从大量的 Item 派生类中，有几个派生类是比较重要的：</p>
@@ -158,7 +158,7 @@
 </ul>
 <h3>MySQL 中 Query 的生命周期</h3>
 <p>为了了解 expression 在 MySQL 是怎么执行的，主要是看 query 在 MySQL 中的生命周期：parsing，preparing，optimizing 和 execution。下图是 MySQL 查询引擎的生命周期，每个组件的输入和输出，到最后怎么拿到真实的存储引擎的数据：数据流动过程是从 SQL statement 到 Query_block 到 AccessPath，到 Iterators，再到存储引擎。</p>
-<p><img alt="" src="https://rongbiaoxie.github.io/images/mysql_query_engine.png" /></p>
+<p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/mysql_query_engine.png" /></p>
 <h3>parser</h3>
 <p>当数据库从客户端接收 SQL 查询并将查询发送给 parser 时，查询的生命周期就开始了。首先是 lexical scanner (词法扫描)，将整个 SQL 语句解析成 token 流，如 “SELECT count(*), state FROM customer GROUP BY state” 解析成了一个个 token </p>
 <p><code>sql
@@ -193,7 +193,7 @@
 <p>Prepare 的另一个重要工作是简化 Query_block 的内容。优化 Item 树来减少计算深度。如前面提到的常量折叠（直接给出常量计算值）和无效代码的去除。在解析和转换 Query_block 的不同部分之后，如下图就是将 “20&gt;10” 和 “100+40” 两个直接运算简化的过程，该阶段的最终输出简化的 Query_block 称为<strong>逻辑查询计划</strong>。</p>
 <p>并且会执行 setup_table，得到 optimizer 优化的 table reference，优化器最直接优化和依赖的就是 prepare 给出的 Query_block 和需要优化的 table 列表。</p>
 <p>在 mysql 代码中，不同 DML 类型的 Query_block 对应于不同 Sql_cmd_dml 类型的 prepare 函数，继续调用到 SELECT_LEX_UNIT::prepare() 。</p>
-<p><img alt="" src="https://rongbiaoxie.github.io/images/prepare_transform.png" /></p>
+<p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/prepare_transform.png" /></p>
 <h3>Optimizer</h3>
 <p>​   优化器目的是得到物理执行计划，在 mysql 8.0.22 之前，是通过 <strong>JOIN</strong> 和<strong>QEP_TAB</strong> (Query Execution Plan Table) 两个结构来表示执行计划。8.0.22 之后，采用了 <strong>AccessPath</strong> 的结构来表示。</p>
 <p>​   对于优化器来说，所有的查询都是 join，每个 Query_block 在处理的时候，都被当作 JOIN 对象来处理，<strong>JOIN::optimize()</strong> 是所有 Query_block 优化的入口函数，目的是将 Query_block 转化成 QEP_TAB 或者 AccessPath。其主要工作:</p>
