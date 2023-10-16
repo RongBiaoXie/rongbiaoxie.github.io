@@ -161,7 +161,7 @@
 <p><img alt="" src="https://rongbiaoxie.github.io/images/sqlengine/mysql_query_engine.png" /></p>
 <h3>parser</h3>
 <p>当数据库从客户端接收 SQL 查询并将查询发送给 parser 时，查询的生命周期就开始了。首先是 lexical scanner (词法扫描)，将整个 SQL 语句解析成 token 流，如 “SELECT count(*), state FROM customer GROUP BY state” 解析成了一个个 token </p>
-<p><code>sql
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 • SELECT
 • count
 • (
@@ -173,7 +173,9 @@
 • customer
 • GROUP
 • BY
-• state</code></p>
+• state
+</pre></div></div>
+
 <p>MySQL 在编译前就生成了每个 <strong>token 和 parse_tree 中数据结构类型的哈希映射</strong>，通过语法检查后将查询的文本转换为结构化的 item 树格式，来表示 SQL 查询的不同部分。</p>
 <p><strong>Parse tree:</strong> </p>
 <p>在 MySQL 中，parse tree 是一个C++ 结构体，这里也称为 <strong>Query_block</strong>。MySQL 代码中表示为 SELECT_LEX 类，其中 SELECT_LEX_UNIT 是包含一系列的 SELECT_LEX 如 UNION 中的子查询，根据查询的结构形成递归包含关系。</p>
@@ -230,22 +232,25 @@
 <h3>Execution</h3>
 <p>​   MySQL 8.0 之后采用了 火山引擎执行器，通过优化器最后构建的 RowIterators，从 root RowIterator 链式调用 Read() 接口，当需要的数据由其他 RowIterator 提供时，调用下一个 RowIterator 的 Read()，Read 每次读取一行，直到返回 EOF。例如 SortingIterator 是将其他 RowIterator 读取的数据，进行排序返回。</p>
 <p>​   执行器核心函数 <strong>ExecuteIteratorQuery</strong>，调用 Query_expression 的 root_iterator Read()，再到每个 Query_block 的 root_iterator Read()，再基于优化器给出的 join 顺序一层层提取表中数据。</p>
-<p><code>c++
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 ExecuteIteratorQuery:
-m_root_iterator-&gt;Init()
-    while m_root_iterator-&gt;Read() is not empty: // 循环读每一行
-        query_result-&gt;send_data(thd, *fields)   // 发送当前行数据给 client</code></p>
+m_root_iterator->Init()
+    while m_root_iterator->Read() is not empty: // 循环读每一行
+        query_result->send_data(thd, *fields)   // 发送当前行数据给 client
+</pre></div></div>
+
 <p>​   Query_block 中不同表的数据流动是由 Join iterator 连接，常用的 netloop join（嵌套循环）iterator 逻辑，不同 join 方式有很多资料可以查询，这里主要介绍下 mysql 最常用的 netloop，主要是先读外表 iterator 数据，再 check 内表 iterator 数据，直到所有数据都读上来。</p>
-<p>```c++
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 while true:
     if state is NEEDS_OUTER_ROW // 需要外表数据
-        m_source_outer-&gt;Read() // 读一行外表数据
-        state = READING_INNER_ROWS  // 需要内表数据 check</p>
-<pre><code>err = m_source_inner-&gt;Read() // 基于当前外表数据读取和 check 内表
-if err = -1: // 基于当前外表数据读取内表为空
-    state = NEEDS_OUTER_ROW   // 读取新的外表数据来 check
-</code></pre>
-<p>```</p>
+        m_source_outer->Read() // 读一行外表数据
+        state = READING_INNER_ROWS  // 需要内表数据 check
+
+    err = m_source_inner->Read() // 基于当前外表数据读取和 check 内表
+    if err = -1: // 基于当前外表数据读取内表为空
+        state = NEEDS_OUTER_ROW   // 读取新的外表数据来 check
+</pre></div></div>
+
 <p>​   每个 RowIterator 读数据时，还会 check 一些 join，having 条件，这个由 FilterIterator 来控制。将实际读取行的 iterator 得到的数据，通过 item 树形式的条件值（m_condition-&gt;val_int）来判断读取的行是否需要。</p>
 <p>​   而真正和存储引擎读数据的是如 EQRefIterator，IndexRangeScanIterator 这种和 table 访问方式相关的 iterator 来控制的，调用 存储引擎 handler 提供的各种访问接口来读取数据。</p>
 <p>[1] Compiling expressions in MySQL, Anders Hallem Iversen.</p>

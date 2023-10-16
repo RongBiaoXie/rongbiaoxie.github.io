@@ -51,7 +51,7 @@
 
 当数据库从客户端接收 SQL 查询并将查询发送给 parser 时，查询的生命周期就开始了。首先是 lexical scanner (词法扫描)，将整个 SQL 语句解析成 token 流，如 “SELECT count(*), state FROM customer GROUP BY state” 解析成了一个个 token 
 
-```sql
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 • SELECT
 • count
 • (
@@ -64,7 +64,7 @@
 • GROUP
 • BY
 • state
-```
+</pre></div></div>
 
 MySQL 在编译前就生成了每个 **token 和 parse_tree 中数据结构类型的哈希映射**，通过语法检查后将查询的文本转换为结构化的 item 树格式，来表示 SQL 查询的不同部分。
 
@@ -132,16 +132,16 @@ Prepare 的另一个重要工作是简化 Query_block 的内容。优化 Item �
 
 ​	执行器核心函数 **ExecuteIteratorQuery**，调用 Query_expression 的 root_iterator Read()，再到每个 Query_block 的 root_iterator Read()，再基于优化器给出的 join 顺序一层层提取表中数据。
 
-```c++
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 ExecuteIteratorQuery:
 m_root_iterator->Init()
   	while m_root_iterator->Read() is not empty: // 循环读每一行
 		query_result->send_data(thd, *fields)	// 发送当前行数据给 client
-```
+</pre></div></div>
 
 ​	Query_block 中不同表的数据流动是由 Join iterator 连接，常用的 netloop join（嵌套循环）iterator 逻辑，不同 join 方式有很多资料可以查询，这里主要介绍下 mysql 最常用的 netloop，主要是先读外表 iterator 数据，再 check 内表 iterator 数据，直到所有数据都读上来。
 
-```c++
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 while true:
 	if state is NEEDS_OUTER_ROW // 需要外表数据
 		m_source_outer->Read() // 读一行外表数据
@@ -150,7 +150,7 @@ while true:
     err = m_source_inner->Read() // 基于当前外表数据读取和 check 内表
     if err = -1: // 基于当前外表数据读取内表为空
 		state = NEEDS_OUTER_ROW   // 读取新的外表数据来 check
-```
+</pre></div></div>
 
 ​	每个 RowIterator 读数据时，还会 check 一些 join，having 条件，这个由 FilterIterator 来控制。将实际读取行的 iterator 得到的数据，通过 item 树形式的条件值（m_condition->val_int）来判断读取的行是否需要。
 
