@@ -178,54 +178,64 @@
 <h3>2.1 使用</h3>
 <h4>2.1.1 安装</h4>
 <p>PT_PERF 已经开源至 <a href="https://github.com/mysqlperformance/pt_perf">github</a>。在 Linux 4.2+ 和 GCC 7+ 版本下，可以通过下面命令安装</p>
-<p><code>shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 sudo yum install binutils binutils-devel elfutils-libelf-devel -y 
 git clone https://github.com/mysqlperformance/pt_perf.git
 cd pt_perf
-make</code></p>
+make
+</pre></div></div>
+
 <p>为了输出时延火焰图，PT_PERF 依赖于 <a href="https://github.com/mysqlperformance/pt-flame">pt_flame</a> 来支持输出时延火焰图，可以通过下面命令安装</p>
-<p><code>shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 git clone https://github.com/mysqlperformance/pt-flame.git
-mkdir build &amp;&amp; cd build
+mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/share/pt_flame -DCMAKE_BUILD_TYPE=RelWidhtDebInfo ../
 cmake --build .
-cmake --install .</code></p>
+cmake --install .
+</pre></div></div>
+
 <p>在使用之前我们需要配置一些系统参数，修改 perf_event_mlock_kb 支持更大的  trace buffer，减少 trace 数据丢失。</p>
 <p>修改 kptr_restrict 支持追踪内核函数，如追踪 off-cpu 分析需要的 schedule 内核函数。</p>
-<p><code>shell
-echo 131072 &gt; /proc/sys/kernel/perf_event_mlock_kb
-echo -1 &gt; /proc/sys/kernel/perf_event_paranoid
-echo 0 &gt; /proc/sys/kernel/kptr_restrict</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+echo 131072 > /proc/sys/kernel/perf_event_mlock_kb
+echo -1 > /proc/sys/kernel/perf_event_paranoid
+echo 0 > /proc/sys/kernel/kptr_restrict
+</pre></div></div>
+
 <p>下面我们以几个场景来看如何使用 pt_perf。</p>
 <h4>2.1.2 场景一：函数分析</h4>
 <p>我们在 Intel(R) Xeon(R) Platinum 8163 机器的 24 core 上启动了一个 MySQL 8.0 程序，并启动了 Sysbench 的 oltp_read_only 128 线程负载去压测 mysql。我们在 16s 时启动 pt trace，此时性能有轻微的下降 (约 3%)。</p>
-<p><code>shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 [ 14s ] thds: 128 qps: 229687.19 
 [ 15s ] thds: 128 qps: 229213.65 
 [ 16s ] thds: 128 qps: 226838.86  # start trace
 [ 17s ] thds: 128 qps: 224836.49
 [ 18s ] thds: 128 qps: 221274.61 
-[ 19s ] thds: 128 qps: 223444.64</code></p>
+[ 19s ] thds: 128 qps: 223444.64 
+</pre></div></div>
+
 <p>使用下面的命令 trace 1 秒后，对 mysql 的 do_command 函数（接受并执行 SQL 的入口函数）进行分析，</p>
-<p><code>shell
-$ sudo ./func_latency -b "bin/mysqld" -f "do_command" -d 1 -p 60416 -s -i -t -o</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+$ sudo ./func_latency -b "bin/mysqld" -f "do_command" -d 1 -p 60416 -s -i -t -o
+</pre></div></div>
+
 <p>通过 -b 指定二进制文件，-f 指定分析的函数名称，-p 指定 mysqld 的进程，-s 使用并行的 perf script 来加速 trace 数据的解析，-o 输出函数的 off-cpu 信息。</p>
 <p>通过 -i 使用 PT 的地址过滤，即在 trace 阶段只记录 do_command 的函数进入和跳转，极大减少了 trace 的数据量，不过需要在 Linux 5.10+ 版本才支持，不使用地址过滤的话，会 trace 所有函数的跳转，在 perf script 阶段将其他函数调用的 trace 丢弃。</p>
 <p>通过 -t 使用 per-thread 的模式进行采样（per-thread 模式默认每个 thread 一个 trace buffer，采样性能影响小，线程数多会使用更多的内存消耗）。 </p>
 <p>最后 pt_perf 会输出 do_command 的函数分析结果：</p>
-<p><code>shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 Histogram - Latency of [do_command]:
           ns             : cnt        distribution        sched      distribution
-     16384 -&gt; 32767      : 132      |                    | 150      |                    |
-     32768 -&gt; 65535      : 8487     |***                 | 16063    |******              |
-     65536 -&gt; 131071     : 22384    |*******             | 27139    |**********          |
-    131072 -&gt; 262143     : 39483    |**************      | 33818    |************        |
-    262144 -&gt; 524287     : 56138    |********************| 52723    |********************|
-    524288 -&gt; 1048575    : 44559    |***************     | 39089    |**************      |
-   1048576 -&gt; 2097151    : 35373    |************        | 28610    |**********          |
-   2097152 -&gt; 4194303    : 4663     |*                   | 2167     |                    |
-   4194304 -&gt; 8388607    : 23       |                    | 12       |                    |
-   8388608 -&gt; 16777215   : 2        |                    | 2        |                    |
+     16384 -> 32767      : 132      |                    | 150      |                    |
+     32768 -> 65535      : 8487     |***                 | 16063    |******              |
+     65536 -> 131071     : 22384    |*******             | 27139    |**********          |
+    131072 -> 262143     : 39483    |**************      | 33818    |************        |
+    262144 -> 524287     : 56138    |********************| 52723    |********************|
+    524288 -> 1048575    : 44559    |***************     | 39089    |**************      |
+   1048576 -> 2097151    : 35373    |************        | 28610    |**********          |
+   2097152 -> 4194303    : 4663     |*                   | 2167     |                    |
+   4194304 -> 8388607    : 23       |                    | 12       |                    |
+   8388608 -> 16777215   : 2        |                    | 2        |                    |
 trace count: 211244, average latency: 610493 ns
 sched count: 199813,   sched latency: 503275 ns, cpu percent: 2264 %
 sched total: 205337, sched each time: 517752 ns
@@ -241,7 +251,9 @@ vio_description                          : 338        211347     5          7.03
 my_net_set_read_timeout                  : 40         422591     1          1.64      |                    |
 Diagnostics_area::reset_diagnostics_area : 23         211244     1          0.46      |                    |
 Protocol_classic::get_output_packet      : 10         422719     0          0.44      |                    |
-Protocol_classic::get_net                : 7          211244     0          0.15      |                    |</code></p>
+Protocol_classic::get_net                : 7          211244     0          0.15      |                    |
+</pre></div></div>
+
 <p>结果比较多，主要包括：</p>
 <ul>
 <li>首先是 do_command 的时延分布直方图，如时延在 131072 ns 到 262143 ns 区间的调用次数为 39483 次。 </li>
@@ -252,41 +264,52 @@ Protocol_classic::get_net                : 7          211244     0          0.15
 <h4>2.1.3 场景二：火焰图</h4>
 <p>火焰图是一种将函数调用栈可视化的方法，使得能够从复杂的函数调用关系中展示出程序的热点。</p>
 <p>使用下面的命令 trace 1 秒后，会调用  <a href="https://github.com/mysqlperformance/pt-flame">pt_flame</a> 将所有的函数调用解析，得到以时延为统计基础的火焰图，pt_flame 是我们开发用于解析函数跳转得到时延火焰图的工具，感兴趣的读者可以阅读其实现。</p>
-<p><code>shell
-./func_latency --flamegraph="latency" -d 1 -p 60416 -t -s</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+./func_latency --flamegraph="latency" -d 1 -p 60416 -t -s
+</pre></div></div>
+
 <p>时延火焰图给出了每个函数的调用次数，平均时延，以及来自哪个函数调用栈。通过时延火焰图，我们能很容易看到时延花在哪个调用栈以及哪个函数上，如下面火焰图，我们可以看到大部分时延都在读 IO 上，并且能看到占比多少。由于使用了全量 trace 数据，在高负载下需要减少 trace 时间，来避免过大的内存和磁盘空间占用，以及更长的解析时间。</p>
 <p><img alt="" src="https://rongbiaoxie.github.io/images/pt_perf/flame_latency.jpg" /></p>
 <p>使用下面的 trace 命令，我们还能得到 on-cpu 的火焰图，将 PT trace 的指令，目前设定每个 10us 输出一次调用栈，得到和 PMI 类似的 on-cpu 的火焰图，即火焰图给出的是函数的采样次数显示的火焰图，但采样间隔较短，输出 cpu 火焰图会更精确，但时间也更久。</p>
-<p><code>shell
- ./func_latency --flamegraph="cpu" -d 1 -p 60416 -t -s</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+ ./func_latency --flamegraph="cpu" -d 1 -p 60416 -t -s
+</pre></div></div>
+
 <h4>2.1.4 场景三：时间线分析</h4>
 <p>当系统状态发生波动，我们需要观测程序时延的波动曲线，来对比波动前后的差异。举个例子我们启动 oltp_insert 负载，并在 5 s 切换了 redo 落盘策略（从事务需要等待日志落盘，到不需要等待落盘）。</p>
 <p>我们通过 -l/--timeline 来指定查看函数 trx_commit 在 trace 期间的时延散点图，通过 -T / --tid 指定查看的线程 id 为 123173。默认每个时延打一个点，也可以通过 --tu/timeline_unit 来指定每 100 个时延求平均画一个点。</p>
-<p><code>shell
-./func_latency -b bin/mysqld -f "trx_commit" -d 10 -t -s -l --tu=100 -T 123173</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+./func_latency -b bin/mysqld -f "trx_commit" -d 10 -t -s -l --tu=100 -T 123173
+</pre></div></div>
+
 <p>图中在 5 s 的时候做过一次落盘切换，trx_commit 时间发生改变，从平均 35us 下降到了 7us 左右。</p>
 <p>也可以通过 -ti=start,min,max 缩小时间范围查看，start 指定起始的时间戳，如图中的 start_timestamp。min,max 指定查看的距离 start 的区间，单位是纳秒。这样也能查看指定时间范围后的函数分析结果以及火焰图，来确认这段时间函数时延为什么降低，或者为什么抖动。</p>
 <p><img alt="img" src="https://rongbiaoxie.github.io/images/pt_perf/timeline.jpg" /></p>
 <h4>2.1.5 场景四：历史分析</h4>
 <p>虽然 trace 阶段不影响运行程序，由于程序 trace 的数据量比较大，分析时为了更快获得结果，会占用不少 cpu 资源。此时我们可以将 trace 数据转移到另一台机器上去解析得到分析结果。避免影响 trace 的程序。</p>
 <p>我们可以使用 --history=1 来 trace 全量数据，其实就是保存了 trace 的源文件 ‘perf.data’，将 perf.data 和 trace 程序的二进制文件复制到另一台机器。注意 trace 程序的二进制所在目录路径需要和原机器一致。</p>
-<p>```shell</p>
-<h1>按 pid 采样</h1>
-<p>./func_latency -d 10 -p 60416 -t --history=1</p>
-<h1>按 tid 采样</h1>
-<p>./func_latency -d 10 -T 123173 -t --history=1</p>
-<h1>按 cpu 采样</h1>
-<p>./func_latency -d 10 -C 0-47 --history=1
-```</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+# 按 pid 采样
+./func_latency -d 10 -p 60416 -t --history=1
+# 按 tid 采样
+./func_latency -d 10 -T 123173 -t --history=1
+# 按 cpu 采样
+./func_latency -d 10 -C 0-47 --history=1
+</pre></div></div>
+
 <p>在另一台机器使用 --history=2 来输出分析信息。</p>
-<p><code>shell
-./func_latency -b bin/mysqld -f "trx_commit" -d 10 -t -s -l --tu=100 -T 123173 --history=2</code></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
+./func_latency -b bin/mysqld -f "trx_commit" -d 10 -t -s -l --tu=100 -T 123173 --history=2
+</pre></div></div>
+
 <h3>2.2 实现过程</h3>
 <p>Linux 在 4.1 版本之后的 perf tools 开始支持了 Intel PT。</p>
 <p>通过 perf record 命令，我们能很容易地使能 PT trace，得到原始的 PT packet 数据，并通过 perf script 进行解析得到可读的执行信息，如通过 --itrace=cr 输出了下面的 call-return 调用关系结果。包含了 线程 ID，CPU ID，时间戳，跳转指令，函数 IP，symbol 等。</p>
-<p><code>shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
  perf record -e intel_pt/cyc=1/u
- perf script --itrace=cr</code></p>
+ perf script --itrace=cr
+</pre></div></div>
+
 <p><img alt="" src="https://rongbiaoxie.github.io/images/pt_perf/pt_cr.jpg" /></p>
 <p>PT 的 perf script 是非常耗时的，并且解析结果的数据量也很大。举个例子，Intel Core i5-8259U 机器上，对于运行 7 毫秒的工作负载，PT trace 数据量大约 1MB。perf script 大约需要 20 秒[4]，得到 1.3 GB 的解析结果。</p>
 <p>因此为了加速 trace 和解析速度，我们修改了 Linux perf tool，使得支持并行 script 以及解析过滤。</p>

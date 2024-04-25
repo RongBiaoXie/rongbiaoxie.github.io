@@ -68,32 +68,34 @@ Intel 在 Broadwell 之后的 CPU 架构引入了 Processor Trace 技术，通�
 
 PT_PERF 已经开源至 [github](https://github.com/mysqlperformance/pt_perf)。在 Linux 4.2+ 和 GCC 7+ 版本下，可以通过下面命令安装
 
-```shell
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 sudo yum install binutils binutils-devel elfutils-libelf-devel -y 
 git clone https://github.com/mysqlperformance/pt_perf.git
 cd pt_perf
 make
-```
+</pre></div></div>
+
 
 为了输出时延火焰图，PT_PERF 依赖于 [pt_flame](https://github.com/mysqlperformance/pt-flame) 来支持输出时延火焰图，可以通过下面命令安装
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 git clone https://github.com/mysqlperformance/pt-flame.git
 mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/share/pt_flame -DCMAKE_BUILD_TYPE=RelWidhtDebInfo ../
 cmake --build .
 cmake --install .
-```
+</pre></div></div>
 
 在使用之前我们需要配置一些系统参数，修改 perf_event_mlock_kb 支持更大的  trace buffer，减少 trace 数据丢失。
 
 修改 kptr_restrict 支持追踪内核函数，如追踪 off-cpu 分析需要的 schedule 内核函数。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 echo 131072 > /proc/sys/kernel/perf_event_mlock_kb
 echo -1 > /proc/sys/kernel/perf_event_paranoid
 echo 0 > /proc/sys/kernel/kptr_restrict
-```
+</pre></div></div>
 
 下面我们以几个场景来看如何使用 pt_perf。
 
@@ -101,20 +103,20 @@ echo 0 > /proc/sys/kernel/kptr_restrict
 
 我们在 Intel(R) Xeon(R) Platinum 8163 机器的 24 core 上启动了一个 MySQL 8.0 程序，并启动了 Sysbench 的 oltp_read_only 128 线程负载去压测 mysql。我们在 16s 时启动 pt trace，此时性能有轻微的下降 (约 3%)。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 [ 14s ] thds: 128 qps: 229687.19 
 [ 15s ] thds: 128 qps: 229213.65 
 [ 16s ] thds: 128 qps: 226838.86  # start trace
 [ 17s ] thds: 128 qps: 224836.49
 [ 18s ] thds: 128 qps: 221274.61 
 [ 19s ] thds: 128 qps: 223444.64 
-```
+</pre></div></div>
 
 使用下面的命令 trace 1 秒后，对 mysql 的 do_command 函数（接受并执行 SQL 的入口函数）进行分析，
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 $ sudo ./func_latency -b "bin/mysqld" -f "do_command" -d 1 -p 60416 -s -i -t -o
-```
+</pre></div></div>
 
 通过 -b 指定二进制文件，-f 指定分析的函数名称，-p 指定 mysqld 的进程，-s 使用并行的 perf script 来加速 trace 数据的解析，-o 输出函数的 off-cpu 信息。
 
@@ -124,7 +126,7 @@ $ sudo ./func_latency -b "bin/mysqld" -f "do_command" -d 1 -p 60416 -s -i -t -o
 
 最后 pt_perf 会输出 do_command 的函数分析结果：
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 Histogram - Latency of [do_command]:
           ns             : cnt        distribution        sched      distribution
      16384 -> 32767      : 132      |                    | 150      |                    |
@@ -153,7 +155,7 @@ my_net_set_read_timeout                  : 40         422591     1          1.64
 Diagnostics_area::reset_diagnostics_area : 23         211244     1          0.46      |                    |
 Protocol_classic::get_output_packet      : 10         422719     0          0.44      |                    |
 Protocol_classic::get_net                : 7          211244     0          0.15      |                    |
-```
+</pre></div></div>
 
 结果比较多，主要包括：
 
@@ -169,9 +171,9 @@ Protocol_classic::get_net                : 7          211244     0          0.15
 
 使用下面的命令 trace 1 秒后，会调用  [pt_flame](https://github.com/mysqlperformance/pt-flame) 将所有的函数调用解析，得到以时延为统计基础的火焰图，pt_flame 是我们开发用于解析函数跳转得到时延火焰图的工具，感兴趣的读者可以阅读其实现。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 ./func_latency --flamegraph="latency" -d 1 -p 60416 -t -s
-```
+</pre></div></div>
 
 时延火焰图给出了每个函数的调用次数，平均时延，以及来自哪个函数调用栈。通过时延火焰图，我们能很容易看到时延花在哪个调用栈以及哪个函数上，如下面火焰图，我们可以看到大部分时延都在读 IO 上，并且能看到占比多少。由于使用了全量 trace 数据，在高负载下需要减少 trace 时间，来避免过大的内存和磁盘空间占用，以及更长的解析时间。
 
@@ -179,9 +181,9 @@ Protocol_classic::get_net                : 7          211244     0          0.15
 
 使用下面的 trace 命令，我们还能得到 on-cpu 的火焰图，将 PT trace 的指令，目前设定每个 10us 输出一次调用栈，得到和 PMI 类似的 on-cpu 的火焰图，即火焰图给出的是函数的采样次数显示的火焰图，但采样间隔较短，输出 cpu 火焰图会更精确，但时间也更久。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
  ./func_latency --flamegraph="cpu" -d 1 -p 60416 -t -s
-```
+</pre></div></div>
 
 #### 2.1.4 场景三：时间线分析
 
@@ -189,9 +191,9 @@ Protocol_classic::get_net                : 7          211244     0          0.15
 
 我们通过 -l/--timeline 来指定查看函数 trx_commit 在 trace 期间的时延散点图，通过 -T / --tid 指定查看的线程 id 为 123173。默认每个时延打一个点，也可以通过 --tu/timeline_unit 来指定每 100 个时延求平均画一个点。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 ./func_latency -b bin/mysqld -f "trx_commit" -d 10 -t -s -l --tu=100 -T 123173
-```
+</pre></div></div>
 
 图中在 5 s 的时候做过一次落盘切换，trx_commit 时间发生改变，从平均 35us 下降到了 7us 左右。
 
@@ -205,20 +207,20 @@ Protocol_classic::get_net                : 7          211244     0          0.15
 
 我们可以使用 --history=1 来 trace 全量数据，其实就是保存了 trace 的源文件 ‘perf.data’，将 perf.data 和 trace 程序的二进制文件复制到另一台机器。注意 trace 程序的二进制所在目录路径需要和原机器一致。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 # 按 pid 采样
 ./func_latency -d 10 -p 60416 -t --history=1
 # 按 tid 采样
 ./func_latency -d 10 -T 123173 -t --history=1
 # 按 cpu 采样
 ./func_latency -d 10 -C 0-47 --history=1
-```
+</pre></div></div>
 
 在另一台机器使用 --history=2 来输出分析信息。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 ./func_latency -b bin/mysqld -f "trx_commit" -d 10 -t -s -l --tu=100 -T 123173 --history=2
-```
+</pre></div></div>
 
 ### 2.2 实现过程
 
@@ -226,10 +228,10 @@ Linux 在 4.1 版本之后的 perf tools 开始支持了 Intel PT。
 
 通过 perf record 命令，我们能很容易地使能 PT trace，得到原始的 PT packet 数据，并通过 perf script 进行解析得到可读的执行信息，如通过 --itrace=cr 输出了下面的 call-return 调用关系结果。包含了 线程 ID，CPU ID，时间戳，跳转指令，函数 IP，symbol 等。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
  perf record -e intel_pt/cyc=1/u
  perf script --itrace=cr
-```
+</pre></div></div>
 
 ![](https://rongbiaoxie.github.io/images/pt_perf/pt_cr.jpg)
 

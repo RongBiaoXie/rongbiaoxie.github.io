@@ -11,18 +11,18 @@
 
 举个例子，我们对 MySQL 启动一个 32 线程的 sysbench oltp_read_only 只读负载，在 91 秒使用 eBPF 统计 1s 时间 MySQL innodb 中 'row_search_mvcc' 的函数时延。此时 MySQL 的 QPS 从 30 w 下降到了 7.8 w。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 [ 90s ] thds: 32 tps: 19488.04 qps: 301753.61
 [ 91s ] thds: 32 tps: 4912.97  qps: 78695.49              # start ebpf uprobe
 [ 92s ] thds: 32 tps: 12584.17 qps: 201264.72
 [ 93s ] thds: 32 tps: 19611.97 qps: 303792.55
-```
+</pre></div></div>
 
 ebpf 输出了函数时延的直方图信息，平时时延是 3153 纳秒，其中在 2048 纳秒到 4095 纳秒的时延调用了 971975 次。
 
 但我们也能看到因使能开销对精度的影响, 统计结果1 us 以下的时延都为 0。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
      nsecs               : count     distribution
        256 -> 511        : 0        |                                        |
        512 -> 1023       : 0        |                                        |
@@ -34,7 +34,7 @@ ebpf 输出了函数时延的直方图信息，平时时延是 3153 纳秒，其
      32768 -> 65535      : 13666    |                                        |
      65536 -> 131071     : 56       |                                        |
 avg = 3153 nsecs, total: 4223229085 nsecs, count: 1339391
-```
+</pre></div></div>
 
 基于 Intel CPU 硬件指令 trace 流的方式，我们实现了更精确，对程序性能影响更小的时延性能分析工具。
 
@@ -42,33 +42,33 @@ avg = 3153 nsecs, total: 4223229085 nsecs, count: 1339391
 
 在 Linux 4.2+ 和 GCC 7+ 版本下，可以通过下面命令安装 [PT_PERF](https://github.com/mysqlperformance/pt_perf)。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 sudo yum install binutils binutils-devel elfutils-libelf-devel -y 
 git clone https://github.com/mysqlperformance/pt_perf.git
 cd pt_perf
 make
-```
+</pre></div></div>
 
 在使用之前我们需要配置一些系统参数，
 
 * 修改 perf_event_mlock_kb 支持更大的  trace buffer，减少 trace 数据丢失。
 * 修改 kptr_restrict 支持追踪内核函数，如追踪 off-cpu 分析需要的 schedule 内核函数。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 echo 131072 > /proc/sys/kernel/perf_event_mlock_kb
 echo 0 > /proc/sys/kernel/kptr_restrict
-```
+</pre></div></div>
 
 ###3 时延分析  
 
 我们用 PT_PERF 对相同 read_only 负载进行分析
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 [ 90s ] thds: 32 tps: 19651.81 qps: 314423.96
 [ 91s ] thds: 32 tps: 19418.84 qps: 310733.39       # start pt perf trace
 [ 92s ] thds: 32 tps: 19221.36 qps: 307534.77
 [ 93s ] thds: 32 tps: 19241.35 qps: 307857.54
-```
+</pre></div></div>
 
 在 91s 时对 'row_search_mvcc' 函数进行 trace，可以看到 qps 从 31w 下降到 30.7w，对性能影响较小。
 
@@ -79,7 +79,7 @@ pt_perf 的输出主要包括：
 * row_search_mvcc 这个函数占用的 on-cpu 时间为 404%，约占用 4 个 cpu 核。
 * 接下来是 row_search_mvcc 每个**子函数**调用次数，平均时延，以及 off-cpu，on-cpu 时间。可以看到两个占比较高的函数，一个是遍历 btree 的函数 btr_pcur_open_with_no_init_func ，以及存储查询到的数据行的函数 row_sel_store_mysql_rec。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 sudo ./func_latency -b /disk2/bin/mysqld -f row_search_mvcc -d 1 -i -t -s -p `mysqlpid` -o
 
 ===========================================================================================================
@@ -142,11 +142,11 @@ row_sel_fetch_last_buf                   : 6          9605884    0          4.76
 lob::undo_vers_t::reset                  : 4          20402293   0          6.46      |**                  |
 row_sel_enqueue_cache_row_for_mysql      : 3          9510294    0          2.64      |                    |
 row_sel_get_record_buffer                : 2          9944777    0          2.06      |                    |
-```
+</pre></div></div>
 
 除此之外，PT_PERF 还分别输出了从不同函数调用 row_search_mvcc 函数的时延，其中从 index_read 中调用的 row_search_mvcc 时延达到了 12us，这是 mysql 从 root 节点遍历 btree 的函数。从 general_fetch 中调用的  row_search_mvcc 时延为 154 ns，因为这大部分是从 record 缓存中取数据，时间很短。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 ===========================================================================================================
 Histogram - Latency of [row_search_mvcc]
            called from [ha_innobase::index_read]:
@@ -182,7 +182,7 @@ trace count: 9606869, average latency: 154 ns
 sched count:      93,   sched latency:   0 ns, cpu percent: 106 %
 
 ...
-```
+</pre></div></div>
 
 通过指定 -l，也能看到随采样时间的时延散点图，用于排查异常的时延点，找到异常时间点的时间范围，横坐标是从 trace 开始到 trace 结束的时间，纵坐标是时延。
 
@@ -190,7 +190,7 @@ sched count:      93,   sched latency:   0 ns, cpu percent: 106 %
 
 通过 --srcline，也可以看到每个函数的地址，源文件位置以及行号，存在多个相同子函数时，方便快速定位。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 Histogram - Child functions's Latency of [row_search_mvcc(row0sel.cc:4292)]:
                     name                 : avg        cnt        src_line           distribution (total)
 btr_pcur_open_with_no_init_func(34b90d0) : 1777       583484     btr0pcur.ic:417   |*****************   |
@@ -201,11 +201,11 @@ trx_assign_read_view(357f910)            : 205        583484     trx0trx.cc:2549
 mtr_t::commit(33d3910)                   : 146        585216     mtr0mtr.cc:900    |*                   |
 ut_allocator<unsigned char>::allocate(2f : 129        6809       ut0new.h:617      |                    |
 row_sel_store_mysql_rec(34bea10)         : 68         17171737   row0sel.cc:2958   |********************|
-```
+</pre></div></div>
 
 有了 off-cpu 时间的指标，我们也能够直观地看到因资源等待的一些瓶颈，如我们分别在同一台机器和不同机器来压测 MySQL 实例，可以看到 get_command 获取 SQL 指令的开销是不同的。远端发压的 get_command 时间高出本机发压 30us，主要都是调度出去等待网络包的时间，因此实际执行 SQL 的 dispatch_command CPU 开销占比也有所差别。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 # 本机发压
 -----------------------------------------------------------------------------------------------------------
 Histogram - Child functions's Latency of [do_command]:
@@ -219,7 +219,7 @@ Histogram - Child functions's Latency of [do_command]:
                     name                 : avg        cnt        sched_time cpu_pct(%) distribution (total)
 dispatch_command                         : 78660      263266     100        2058.90   |********************|
 Protocol_classic::get_command            : 42541      263256     36322      162.97    |**********          |
-```
+</pre></div></div>
 
 
 
@@ -235,7 +235,7 @@ CPU 的指令执行是很快的，trace 得到的指令流也是巨大的。使�
 
 并且在 trace 过程中遇到了 45 次数据丢失，虽然指定了 1s 的 trace 时间，但实际的 trace 时间跨度为 1.75s，其中丢失了 1.25s 的 trace 时间。通过数据丢失的日志我们可以丢弃不完整的函数调用，但难以对异常点的排查，从生成的散点图我们也能看到的 trace 数据的丢失程度。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 sudo ./func_latency -b /disk2/bin/mysqld -f do_command -d 1 -s -p `mysqlpid` -o -w 10 -l -t
 [ trace process 121576 for 1.00 seconds ]
 [ perf record: Woken up 0 times to write data ]
@@ -248,7 +248,7 @@ sudo ./func_latency -b /disk2/bin/mysqld -f do_command -d 1 -s -p `mysqlpid` -o 
 [ analyze functions has consumed 0.19 seconds ]
 [ real trace time: 1.75 seconds ]
 [ miss trace time: 1.25 seconds ]
-```
+</pre></div></div>
 
 ![](https://rongbiaoxie.github.io/images/pt_perf/per_thread_timeline.jpg)
 
@@ -267,7 +267,7 @@ sudo ./func_latency -b /disk2/bin/mysqld -f do_command -d 1 -s -p `mysqlpid` -o 
 
 从解析时间和 trace errors 可以看到，使用 Ip_filtering 和 trace 单个线程都能很好减少 trace 的数据量，数据基本没有丢失。减少 trace 时间也能够降低部分解析时间，压力较大时，但要考虑 trace 的线程数目，虽然只 trace 0.01s，但实际 trace 了 0.82s。从散点图我们也能看到每种方式的数据丢失程度。
 
-```shell
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight">
 # Ip_filtering
 sudo ./func_latency -b /disk2/bin/mysqld -f do_command -d 1 -s -p `mysqlpid` -t -i -o -l
 [ trace process 121576 for 1.00 seconds ]
@@ -309,6 +309,6 @@ sudo ./func_latency -b /disk2/bin/mysqld -f do_command -d 0.01 -s -p `mysqlpid` 
 [ analyze functions has consumed 0.11 seconds ]
 [ real trace time: 0.82 seconds ]
 [ miss trace time: 0.31 seconds ]
-```
+</pre></div></div>
 
 ![](https://rongbiaoxie.github.io/images/pt_perf/trace_comapre.jpg)
