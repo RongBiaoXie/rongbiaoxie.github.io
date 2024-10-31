@@ -1,4 +1,5 @@
 # PolarDB 的 BLOB 实现与性能优化
+<p> launched in 2024.10.31, 浙江 </p>
 
 ​	**Blob (binary large object)** 是 Innodb 中的一种大对象存储类型，既可以存储字符对象，也可以存入二进制对象，在需要存储空间需求较大的数据的场景下，应用非常广泛。
 

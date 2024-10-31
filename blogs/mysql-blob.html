@@ -94,6 +94,10 @@
         <h3 class="menu-label">
             Menu
         </h3>
+        <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2024-10-31</time></div>
+        <p><li><a href="blogs/ebpf-perf.html">通过 eBPF 进行跨线程的性能分析</a></li></p>
+        <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2024-10-31</time></div>
+        <p><li><a href="blogs/mysql-blob.html">PolarDB 的 BLOB 实现与性能优化</a></li></p>
         <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2024-4-25</time></div>
         <p><li><a href="https://rongbiaoxie.github.io/blogs/pt_perf_latency.html">如何使用 Intel Processor Trace 工具查看任意函数执行时间</a></li></p>
         <div><time class="has-text-grey is-size-7 is-uppercase" datetime="2019-09-06T15:14:17.000Z">2024-4-25</time></div>
@@ -130,6 +134,8 @@
     <div class="card-content article ">
         <div class="content">
             <h1>PolarDB 的 BLOB 实现与性能优化</h1>
+<p> launched in 2024.10.31, 浙江 </p>
+
 <p>​   <strong>Blob (binary large object)</strong> 是 Innodb 中的一种大对象存储类型，既可以存储字符对象，也可以存入二进制对象，在需要存储空间需求较大的数据的场景下，应用非常广泛。</p>
 <p>​   所有可变长度的类型如 VARCHAR, VARBINARY 以及 TEXT，当记录超过页大小的一半时 (如 16 KB 的页最大记录长度为 8 KB)，也都会尝试将记录中的较长的字段使用外部 BLOB 页进行存储，直到 record 大小满足要求，为了方便，我们将这些外部存储的数据都统称为 blob 数据。</p>
 <p>​   PolarDB 基于分布式共享存储的一写多读架构，面向在大字段写入场景做了大量性能优化，来充分利用底座分布式存储的高吞吐能力，实际测试中在优化后在高并发下能有接近 3 倍吞吐的性能提升。</p>
